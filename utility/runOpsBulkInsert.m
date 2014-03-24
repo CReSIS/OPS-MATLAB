@@ -32,12 +32,12 @@ settings.runType = 4;
 
 % ----------------------------------------------------------------
 % paramFn: FILENAME.xls OF EXCEL CReSIS PARAMS SHEET
-settings.paramFn = 'rds_param_2011_Greenland_P3.xls';
+settings.paramFn = 'rds_param_2012_Antarctica_DC8.xls';
 
 % ----------------------------------------------------------------
 % location: LOCATION NAME ('arctic' OR 'antarctic')
-settings.location = 'arctic';
-% settings.location = 'antarctic'
+% settings.location = 'arctic';
+settings.location = 'antarctic';
 
 % ----------------------------------------------------------------
 % sysName: SYSTEM NAME ('rds','snow','accum','kuband')
@@ -67,6 +67,10 @@ settings.layerFilter = inline('~isempty(regexp(x,''(^surface$|^bottom$)''))');
 % ----------------------------------------------------------------
 % pathSpacing: DISTANCE IN METERS TO SPACE THE PATH/LAYER POINTS (DEFAULT = 2.50m)
 settings.pathSpacing = 2.5;
+
+% ----------------------------------------------------------------
+% autoReleaseSeason: BOOLEAN, SHOULD THE SEASON AUTOMATICALLY BE PUBLIC? (DEFAULT = false)
+settings.autoReleaseSeason = false;
 
 % ----------------------------------------------------------------
 % logsOn: BOOLEAN, SHOULD THE COMMAND WINDOW BE LOGGED TO A TXT FILE?

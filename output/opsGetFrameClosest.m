@@ -8,10 +8,10 @@ function [status,data]=opsGetFrameClosest(sys,param)
 %   sys: (string) sys name ('rds','accum','snow',...)
 %   param: structure with fields
 %       properties.location = string ('arctic' or 'antarctic')
-%       properties.season = string OR cell of string/s (can be '')
 %       properties.x = double
 %       properties.y = double
 %       OPTIONAL:
+%           properties.season = string OR cell of string/s
 %           properties.startseg = string of minimum segment name
 %           properties.stopseg = string of maximum segment name
 %

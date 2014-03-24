@@ -202,6 +202,16 @@ if insertPathCmd
     fprintf('No layer points will be loaded for these segments.\n\n');
   end
   
+  % AUTOMATICALLY RELEASE THE SEASON IF REQUESTED
+  if settings.autoReleaseSeason
+    clear param;
+    param.properties.season_name = settings.seasonName;
+    [status,message] = opsReleaseSeason(settings.sysName,param);
+    if status == 1
+      fprintf(message);
+    end
+  end
+  
   diary OFF % STOP LOGGING
   
 end
@@ -325,7 +335,7 @@ if insertLayerCmd
             
             fprintf('\n');
             warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
-            failedLayers{end+1} = opsLayerData(layerIdx).properties.lyr_name; % STORE THE LAYER NAME IF ANYTHING FAILED
+            failedLayers{end+1} = {frameName,opsLayerData(layerIdx).properties.lyr_name}; % STORE THE LAYER NAME IF ANYTHING FAILED
             continue
             
           end
@@ -353,7 +363,7 @@ if insertLayerCmd
     if ~isempty(failedLayers)
       fprintf('\n\nThere were issues loading data for layers:\n');
       for failIdx = 1:length(failedLayers)
-        fprintf('\t%s\n',failedLayers{failIdx});
+        fprintf('\t%s %s\n',failedLayers{failIdx}{1},failedLayers{failIdx}{2});
       end
     end
     
