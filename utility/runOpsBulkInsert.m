@@ -28,16 +28,16 @@
 %   3: INSERT ATM LAYERS ONLY
 %   4: (1) AND (2)
 %   5: (1), (2), AND (3)
-settings.runType = 4;
+settings.runType = 3;
 
 % ----------------------------------------------------------------
 % paramFn: FILENAME.xls OF EXCEL CReSIS PARAMS SHEET
-settings.paramFn = 'rds_param_2012_Antarctica_DC8.xls';
+settings.paramFn = 'rds_param_2011_Greenland_P3.xls';
 
 % ----------------------------------------------------------------
 % location: LOCATION NAME ('arctic' OR 'antarctic')
 % settings.location = 'arctic';
-settings.location = 'antarctic';
+settings.location = 'arctic';
 
 % ----------------------------------------------------------------
 % sysName: SYSTEM NAME ('rds','snow','accum','kuband')
@@ -70,7 +70,7 @@ settings.pathSpacing = 2.5;
 
 % ----------------------------------------------------------------
 % autoReleaseSeason: BOOLEAN, SHOULD THE SEASON AUTOMATICALLY BE PUBLIC? (DEFAULT = false)
-settings.autoReleaseSeason = false;
+settings.autoReleaseSeason = true;
 
 % ----------------------------------------------------------------
 % logsOn: BOOLEAN, SHOULD THE COMMAND WINDOW BE LOGGED TO A TXT FILE?

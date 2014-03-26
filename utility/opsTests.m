@@ -11,6 +11,9 @@
 %
 % =========================================================================
 
+%% USER OVERWRITE
+deleteAfterCompleteion = true;
+
 %% warning CHECK BEFORE STARTING
 opsCmd;
 if strcmp(gOps.serverUrl,'https://ops.cresis.ku.edu/ops/')
@@ -217,20 +220,21 @@ if status ~= 1
   warning(initData);
 end
 
-%% BULK DELETE ALL OF IT
-clear param;
-param.properties.season = 'test';
-[status,delData] = opsDeleteBulk('rds',param);
-if status ~= 1
-  warning(delData);
+if deleteAfterCompleteion
+  %% BULK DELETE ALL OF IT
+  clear param;
+  param.properties.season = 'test';
+  [status,delData] = opsDeleteBulk('rds',param);
+  if status ~= 1
+    warning(delData);
+  end
+  
+  fprintf('NO ERRORS OCCURED. TESTS PASSED\n');
+  
+  %% CLEANUP (DELETE LAYER AND LAYER GROUP)
+  [status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test'' RETURNING name;');
+  [status,cData] = opsQuery('DELETE FROM rds_layer_groups WHERE name=''testLayerGroup'' RETURNING name;');
 end
-
-fprintf('NO ERRORS OCCURED. TESTS PASSED\n');
-
-%% CLEANUP (DELETE LAYER AND LAYER GROUP)
-[status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test'' RETURNING name;');
-[status,cData] = opsQuery('DELETE FROM rds_layer_groups WHERE name=''testLayerGroup'' RETURNING name;');
-
 
 %% OTHER TESTS TO DO EVENTUALLY
 

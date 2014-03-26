@@ -77,9 +77,22 @@ end
 
 %% USER CONFIRMATION
 
+switch settings.runType
+  case 1
+    runStr = 'path';
+  case 2
+    runStr = 'layer';
+  case 3
+    runStr = 'atm';
+  case 4
+    runStr = 'path,layer';
+  case 5
+    runStr = 'path,layer,atm';
+end
+
 opsCmd;
 confirmParams = {sprintf('SERVER: \t %s',gOps.serverUrl),'',sprintf('SEASON NAME: \t %s',settings.seasonName),'',...
-  sprintf('RADAR NAME: \t %s',settings.radarName),'',sprintf('RUN TYPE: \t %0.0d',settings.runType),'',...
+  sprintf('RADAR NAME: \t %s',settings.radarName),'',sprintf('RUN TYPE: \t %s',runStr),'',...
   sprintf('SYSTEM NAME: \t %s',settings.sysName),'',sprintf('PATH SPACING: \t %0.2f meters',settings.pathSpacing),'',...
   sprintf('LOCATION: \t %s',settings.location),''};
 
@@ -208,7 +221,7 @@ if insertPathCmd
     param.properties.season_name = settings.seasonName;
     [status,message] = opsReleaseSeason(settings.sysName,param);
     if status == 1
-      fprintf(message);
+      fprintf('%s\n',message);
     end
   end
   
@@ -370,11 +383,106 @@ if insertLayerCmd
     diary OFF
     
   end
+end
+
+%% ATM INSERTION
+
+if insertAtmCmd
   
-  %% ATM INSERTION
+  atmFailed=false;
   
-  if insertAtmCmd
-    
+  % START LOGGING
+  if settings.logsOn
+    pathLogFn = fullfile(logsBaseFn,strcat('OPS_ATMINSERT_',datestr(now,'yyyy.mm.dd'),'_',datestr(now,'HH.MM.SS'),'.txt'));
+    diary(pathLogFn);
   end
+  
+  start = tic; % SET UP TIMING
+  
+  % FOR EACH SEGMENT PROCESS THE INPUT AND PUSH THE DATA TO THE SERVER
+  for paramIdx = 1:length(params)
+    
+    try
+      
+      % CONFIRM THAT GENERIC IS NOT FLAGGED
+      param = params(paramIdx);
+      if param.cmd.generic ~= 1
+        continue;
+      end
+      
+      % DO NOT LOAD LAYERS FOR FAILTED SEGMENTS
+      if ~exist('failedSegments','var')
+        failedSegments = {};
+      end
+      if any(strcmp(param.day_seg,failedSegments))
+        fprintf('Skipping atm layer for segment %s, path loading failed for this segment.\n',param.day_seg);
+        continue;
+      end
+      
+      fprintf('Loading atm layer for segment %s ...\n',param.day_seg);
+      
+      % GET ATM L2 FILENAMES
+      atmFns = get_filenames_atm(settings.location,param.day_seg,settings.data_support_path);
+      if isempty(atmFns)
+        warning('No atm data. Skipping segment %s',param.day_seg);
+        continue;
+      end
+      
+      % CREATE ATM PARAM
+      atmParam = struct('year',ones(1,length(atmFns))*str2double(param.day_seg(1:4)),'month',ones(1,length(atmFns))*str2double(param.day_seg(5:6)),...
+        'day',ones(1,length(atmFns))*str2double(param.day_seg(7:8)),'time_reference','gps');
+      
+      % CONVERT ATM L2 TO OPS FORMAT
+      opsAtmData = atmToOps(atmFns,atmParam,settings);
+      
+      mstop = toc(start); % RECORD MATLAB COMPUTATION TIME
+      ptic = tic;
+      
+      % CREATE PARAM FOR ATM LAYER
+      opsAtmLayerParam.properties.lyr_name = 'atm';
+      opsAtmLayerParam.properties.lyr_group_name = 'lidar';
+      opsAtmLayerParam.properties.lyr_description = 'atm l2 lidar surface';
+      opsAtmLayerParam.properties.public = true;
+      
+      % PUSH DATA TO THE SERVER
+      try
+      [~,~] = opsCreateLayer(settings.sysName,opsAtmLayerParam);
+      catch ME
+        fprintf('\t-> Layer ''atm'' exists, layer points will be added to layer.');
+      end
+      
+      [status,message] = opsCreateLayerPoints(settings.sysName,opsAtmData);
+      
+      pstop = toc(ptic);
+      
+      if status ~= 1
+        
+        atmFailed = true;
+        fprintf('\n');
+        warning(message);
+        
+      else
+        
+        fprintf('\n\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
+        fprintf('\t-> Status: %s\n',message);
+        
+      end
+      
+    catch ME
+      
+      fprintf('\n');
+      warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
+      atmFailed = true;
+      continue
+      
+    end
+  end
+  
+  % REPORT FAILED ATM
+  if atmFailed
+    fprintf('\n\nThere were issues loading atm data.\n');
+  end
+  
+  diary OFF
   
 end

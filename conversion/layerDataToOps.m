@@ -4,13 +4,16 @@ function opsLayerData = layerDataToOps(layerDataFn,settings)
 % 1. Converts CReSIS layerData to the OPS format.
 % 2. Interpolates layerData onto a fixed scale based on point paths in the OPS database.
 % 3. Removes any large gaps in the layerData (see also data_gaps_check.m)
-% 4. Removes any duplicate points in the layerData (keeps manual over auto points)
+% 4. Removes any duplicate points in the layerData (all output are set to type=auto/2)
 %
 % Input:
 %   layerDataFn: Absolute path to a CReSIS layerData (.m) file.
-%   settings: optional settings structure with the following fields
-%     .layerFilter = REGULAR EXPRESSION OF LAYER NAMES TO INSERT
+%   settings: structure with the following fields
+%     .layerFilter (optional) = REGULAR EXPRESSION OF LAYER NAMES TO INSERT
 %       for more information on layerFilter see also runOpsBulkInsert.m
+%     .location = string ('arctic','antarctic')
+%     .seasonName = string
+%     .sysName = string ('rds','accum',...)
 %
 % Output:
 %   opsLayerData = structure with fields:
@@ -128,7 +131,7 @@ for layerIdx = 1:length(lyr.layerData)
   opsLayerData(end+1).properties.point_path_id = pathData.properties.id;
   opsLayerData(end).properties.username = settings.userName;
   opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time);
-  opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time));
+  opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time))*2;
   opsLayerData(end).properties.quality = interp1(lyrCombined.gps_time,lyrCombined.quality,pathData.properties.gps_time,'nearest');
   opsLayerData(end).properties.lyr_name = lyrCombined.lyr_name;
   
