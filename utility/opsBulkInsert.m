@@ -448,7 +448,7 @@ if insertAtmCmd
       try
       [~,~] = opsCreateLayer(settings.sysName,opsAtmLayerParam);
       catch ME
-        fprintf('\t-> Layer ''atm'' exists, layer points will be added to layer.');
+        fprintf('\t-> Layer ''atm'' exists, layer points will be added to layer.\n');
       end
       
       [status,message] = opsCreateLayerPoints(settings.sysName,opsAtmData);
@@ -463,7 +463,7 @@ if insertAtmCmd
         
       else
         
-        fprintf('\n\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
+        fprintf('\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
         fprintf('\t-> Status: %s\n',message);
         
       end

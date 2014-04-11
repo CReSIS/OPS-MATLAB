@@ -141,6 +141,13 @@ for layerIdx = 1:length(lyr.layerData)
   opsLayerData(end).properties.type = double(opsLayerData(end).properties.type(~dataGapIdxs));
   opsLayerData(end).properties.quality = double(opsLayerData(end).properties.quality(~dataGapIdxs));
   
+  % REMOVE NAN IN DATA
+  keepIdxs = ~isnan(opsLayerData(end).properties.twtt);
+  opsLayerData(end).properties.point_path_id = opsLayerData(end).properties.point_path_id(keepIdxs);
+  opsLayerData(end).properties.twtt = opsLayerData(end).properties.twtt(keepIdxs);
+  opsLayerData(end).properties.type = opsLayerData(end).properties.type(keepIdxs);
+  opsLayerData(end).properties.quality = opsLayerData(end).properties.quality(keepIdxs);
+  
   lyrCombined = []; % RESET COMBINED LAYERDATA STRUCTURE
   
 end
