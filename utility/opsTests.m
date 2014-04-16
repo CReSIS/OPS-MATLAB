@@ -158,8 +158,16 @@ end
 
 %% GET LAYER POINTS WTIH GEOM
 clear param;
+param.properties.location = 'arctic';
 param.properties.point_path_id = pathData.properties.id;
 param.properties.return_geom = 'geog';
+[status,lpGetData] = opsGetLayerPoints('rds',param);
+if status ~= 1
+  warning(lpGetData);
+end
+
+%% GET LAYER POINTS WTIH GEOM (PROJECTED)
+param.properties.return_geom = 'proj';
 [status,lpGetData] = opsGetLayerPoints('rds',param);
 if status ~= 1
   warning(lpGetData);

@@ -22,7 +22,7 @@ function [status,data] = opsGetLayerPoints(sys,param)
 %     properties.return_geom = string ('geog','proj')
 %         geog returns lat/lon/elev in wsg84 (degrees)
 %         proj returns x/y/elev in polar stereographic (meters)
-%     properties.lyr_name = string or cell of strings ('surface' OR {'suface','bottom'})
+%     properties.lyr_name = string or cell of strings ('surface' OR {'surface','bottom'})
 %
 % Output:
 %   status: integer (0:Error,1:Success,2:Warning)
@@ -65,7 +65,22 @@ end
 
 % CREATE THE DATA OUTPUT STRUCTURE OR MESSAGE
 if status == 2
-  data = [];
+  % STORE THE UNIQUE VARIABLES IN DATA
+  data.properties.point_path_id = [];
+  data.properties.gps_time = [];
+  data.properties.twtt = [];
+  data.properties.type = [];
+  data.properties.quality = [];
+  data.properties.lyr_id = [];
+  if isfield(param.properties,'return_geom') && strcmpi(param.properties.return_geom,'geog')
+    data.properties.lat = [];
+    data.properties.lon = [];
+    data.properties.elev = [];
+  elseif isfield(param.properties,'return_geom') && strcmpi(param.properties.return_geom,'proj')
+    data.properties.x = [];
+    data.properties.y = [];
+    data.properties.elev = [];
+  end
 else
   % STORE THE UNIQUE VARIABLES IN DATA
   data.properties.point_path_id = double(cat(2,decodedJson.point_path_id{:}));

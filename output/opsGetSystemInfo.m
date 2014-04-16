@@ -31,11 +31,11 @@ end
 [status,decodedJson] = jsonResponseDecode(jsonResponse);
 
 % CREATE THE DATA OUPUT STRUCTURE OR MESSAGE
-data = struct('properties',struct('system',[],'season',[],'location',[],'public',[]));
+data = struct('properties',struct('systems',[],'seasons',[],'locations',[],'public',[]));
 for outIdx = 1:length(decodedJson)
-  data.properties.system{end+1} = decodedJson{outIdx}.system;
-  data.properties.season{end+1} = decodedJson{outIdx}.season;
-  data.properties.location{end+1} = decodedJson{outIdx}.location;
+  data.properties.systems{end+1} = decodedJson{outIdx}.system;
+  data.properties.seasons{end+1} = decodedJson{outIdx}.season;
+  data.properties.locations{end+1} = decodedJson{outIdx}.location;
   data.properties.public(end+1) = decodedJson{outIdx}.public;
 end
 end
