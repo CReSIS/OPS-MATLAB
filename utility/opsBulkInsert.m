@@ -25,7 +25,7 @@ end
 
 % PATH SPACING DEFAULT
 if ~isfield(settings,'pathSpacing') || isempty(settings.pathSpacing)
-  settings.pathSpacing = 2.5;
+  settings.pathSpacing = 15;
 end
 
 % GET THE SYSTEM userName
@@ -167,6 +167,7 @@ if insertPathCmd
       outData.geometry.coordinates = [outLon' outLat'];
       outData.properties.location = settings.location;
       outData.properties.season = settings.seasonName;
+      outData.properties.season_group = settings.seasonGroup;
       outData.properties.radar = settings.radarName;
       outData.properties.segment = param.day_seg;
       outData.properties.gps_time = outGpsTime;
@@ -215,15 +216,15 @@ if insertPathCmd
     fprintf('No layer points will be loaded for these segments.\n\n');
   end
   
-  % AUTOMATICALLY RELEASE THE SEASON IF REQUESTED
-  if settings.autoReleaseSeason
-    clear param;
-    param.properties.season_name = settings.seasonName;
-    [status,message] = opsReleaseSeason(settings.sysName,param);
-    if status == 1
-      fprintf('%s\n',message);
-    end
-  end
+%   %   AUTOMATICALLY RELEASE THE SEASON IF REQUESTED (NEED TO REVISE WITH SEASON_GROUP.
+%   if settings.autoReleaseSeason
+%     clear param;
+%     param.properties.season_name = settings.seasonName;
+%     [status,message] = opsReleaseSeason(settings.sysName,param);
+%     if status == 1
+%       fprintf('%s\n',message);
+%     end
+%   end
   
   diary OFF % STOP LOGGING
   
@@ -303,7 +304,6 @@ if insertLayerCmd
         
         opsLayerData = layerDataToOps(layerFn,settings); % CONVERT layerData TO OPS layerData
         
-        
         % CHECK FOR EMPTY LAYERS
         emptyLayerIdxs = [];
         for layerIdx = 1:length(opsLayerData)
@@ -314,6 +314,9 @@ if insertLayerCmd
         opsLayerData(emptyLayerIdxs) = []; % SET THE EMPTY STRUCTURES
         if isempty(opsLayerData)
           message = 'WARNING: NO LAYERS TO INSERT, LAYERS ARE EMPTY'; % SAVE MESSAGE IF ALL ARE EMPTY
+          fprintf('\n\t\t\t-> Time: Matlab %2.2fs Python %2.2fs\n',0.00,0.00);
+          fprintf('\t\t\t-> Status: %s\n',message);
+          failedFrames{end+1} = frameName;
         end
         
         mstop = toc(start); % RECORD MATLAB COMPUTATION TIME

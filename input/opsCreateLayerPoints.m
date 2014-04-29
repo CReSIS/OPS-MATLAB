@@ -18,6 +18,8 @@ function [status,message] = opsCreateLayerPoints(sys,param)
 %   status: integer (0:Error,1:Success,2:Warning)
 %   message: status message
 %
+% Note a NaN in twtt will force the layer point to be deleted in the database.
+%
 % Author: Kyle W. Purdon
 
 % SET UP DEFAULT VALUES FOR GROUP

@@ -52,16 +52,24 @@ end
 [status,decodedJson] = jsonResponseDecode(jsonResponse);
 
 if status == 2
-    data = []; % CLIENT NEEDS TO HANDLE EMPTY DATA
+    data.properties.source_point_path_id = [];
+    data.properties.cross_point_path_id = [];
+    data.properties.source_elev = [];
+    data.properties.cross_elev = [];
+    data.properties.layer_id = [];
+    data.properties.frame_id = [];
+    data.properties.twtt = [];
+    data.properties.angle = [];
+    data.properties.abs_error = [];
 else
-    data.properties.source_point_path_id = decodedJson.source_point_path_id;
-    data.properties.cross_point_path_id = decodedJson.cross_point_path_id;
-    data.properties.source_elev = decodedJson.source_elev;
-    data.properties.cross_elev = decodedJson.cross_elev;
-    data.properties.layer_id = decodedJson.layer_id;
-    data.properties.frame_id = decodedJson.frame_id;
-    data.properties.twtt = decodedJson.twtt;
-    data.properties.angle = decodedJson.angle;
-    data.properties.abs_error = decodedJson.abs_error;
+    data.properties.source_point_path_id = cell2mat(decodedJson.source_point_path_id);
+    data.properties.cross_point_path_id = cell2mat(decodedJson.cross_point_path_id);
+    data.properties.source_elev = cell2mat(decodedJson.source_elev);
+    data.properties.cross_elev = cell2mat(decodedJson.cross_elev);
+    data.properties.layer_id = cell2mat(decodedJson.layer_id);
+    data.properties.frame_id = cell2mat(decodedJson.frame_id);
+    data.properties.twtt = cell2mat(decodedJson.twtt);
+    data.properties.angle = cell2mat(decodedJson.angle);
+    data.properties.abs_error = cell2mat(decodedJson.abs_error);
 end
 end

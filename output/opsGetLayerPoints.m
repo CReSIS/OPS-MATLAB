@@ -41,6 +41,9 @@ function [status,data] = opsGetLayerPoints(sys,param)
 % Author: Kyle W. Purdon
 
 % CONSTRUCT THE JSON STRUCTURE
+param.properties.mat = true;
+param.properties.username = '';
+param.properties.userauthstatus = false;
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCTURE TO A JSON STRING

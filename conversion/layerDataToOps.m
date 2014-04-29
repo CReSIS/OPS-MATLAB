@@ -104,6 +104,28 @@ for layerIdx = 1:length(lyr.layerData)
   lyrCombined.twtt = cat(2,lyrCombined.twtt,double(layerSource(goodIdxs)));
   lyrCombined.quality = cat(2,lyrCombined.quality,lyr.layerData{layerIdx}.quality(goodIdxs));
   
+  % SORT COMBINED LAYER DATA BY GPS_TIME
+  if ~issorted(lyrCombined.gps_time)
+      [lyrCombined.gps_time,sortIdxs] = sort(lyrCombined.gps_time);
+      lyrCombined.lat = lyrCombined.lat(sortIdxs);
+      lyrCombined.lon = lyrCombined.lon(sortIdxs);
+      lyrCombined.elev = lyrCombined.elev(sortIdxs); 
+      lyrCombined.twtt = lyrCombined.twtt(sortIdxs);
+      lyrCombined.quality = lyrCombined.quality(sortIdxs);
+  end
+  
+  % CHECK FOR EMPTY LAYER COMBINED (WARN AND STOP IF SURFACE)
+  if isempty(lyrCombined.twtt)
+      if strcmp(lyr.layerData{layerIdx}.name,'surface')
+          warning('LayerData file with no surface. No data will be loaded for this frame, please report this.');
+          opsLayerData = [];
+          return;
+      else
+          lyrCombined = [];
+          continue;
+      end
+  end
+  
   % FIND DUPLICATES AND REMOVE
   [~,notDupIdxs] = unique(lyrCombined.gps_time);
   newGpsTime = nan(size(lyrCombined.gps_time));
@@ -122,17 +144,20 @@ for layerIdx = 1:length(lyr.layerData)
   lyrCombined.quality(isnan(lyrCombined.quality)) = 1; % CORRECT FOR NAN QUALITY
   lyrCombined.lyr_name = lower(lyr.layerData{layerIdx}.name); % ADD A NAME FIELD
   
+  % SUSBSET PATH DATA TO EXTENT OF COMBINED LAYERDATA
+  keepPathIdxs = intersect(find(pathData.properties.gps_time <= max(lyrCombined.gps_time)),find(pathData.properties.gps_time >= min(lyrCombined.gps_time)));
+  
   % FIND GAPS IN DATA
   layerAlongTrack = geodetic_to_along_track(lyrCombined.lat,lyrCombined.lon,lyrCombined.elev);
-  pathAlongTrack = geodetic_to_along_track(pathData.properties.Y,pathData.properties.X,pathData.properties.elev);
-  dataGapIdxs = data_gaps_check(pathData.properties.gps_time,lyrCombined.gps_time,pathAlongTrack,layerAlongTrack,50,20);
+  pathAlongTrack = geodetic_to_along_track(pathData.properties.Y(keepPathIdxs),pathData.properties.X(keepPathIdxs),pathData.properties.elev(keepPathIdxs));
+  dataGapIdxs = data_gaps_check(pathData.properties.gps_time(keepPathIdxs),lyrCombined.gps_time,pathAlongTrack,layerAlongTrack,50,20);
   
   % INTERPOLATE COMBINED LAYERDATA ONTO OPS PATH, STORE IN THE OUTPUT
-  opsLayerData(end+1).properties.point_path_id = pathData.properties.id;
+  opsLayerData(end+1).properties.point_path_id = pathData.properties.id(keepPathIdxs);
   opsLayerData(end).properties.username = settings.userName;
-  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time);
-  opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time))*2;
-  opsLayerData(end).properties.quality = interp1(lyrCombined.gps_time,lyrCombined.quality,pathData.properties.gps_time,'nearest');
+  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time(keepPathIdxs));
+  opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time(keepPathIdxs)))*2;
+  opsLayerData(end).properties.quality = interp1(lyrCombined.gps_time,lyrCombined.quality,pathData.properties.gps_time(keepPathIdxs),'nearest');
   opsLayerData(end).properties.lyr_name = lyrCombined.lyr_name;
   
   % REMOVE GAPS IN DATA
@@ -141,12 +166,16 @@ for layerIdx = 1:length(lyr.layerData)
   opsLayerData(end).properties.type = double(opsLayerData(end).properties.type(~dataGapIdxs));
   opsLayerData(end).properties.quality = double(opsLayerData(end).properties.quality(~dataGapIdxs));
   
-  % REMOVE NAN IN DATA
-  keepIdxs = ~isnan(opsLayerData(end).properties.twtt);
-  opsLayerData(end).properties.point_path_id = opsLayerData(end).properties.point_path_id(keepIdxs);
-  opsLayerData(end).properties.twtt = opsLayerData(end).properties.twtt(keepIdxs);
-  opsLayerData(end).properties.type = opsLayerData(end).properties.type(keepIdxs);
-  opsLayerData(end).properties.quality = opsLayerData(end).properties.quality(keepIdxs);
+%   % REMOVE NANs IN DATA AND KEEP ONLY VALUES THAT HAVE A SURFACE
+%   noSurfIdxs = setdiff(opsLayerData(end).properties.point_path_id,opsLayerData(1).properties.point_path_id);
+%   if ~isempty(noSurfIdxs)
+%       warning('%d Bottom Layer Points Without a Surface Were Removed Before Insert',length(noSurfIdxs))
+%   end
+%   keepIdxs = ~isnan(opsLayerData(end).properties.twtt) & ~ismember(opsLayerData(end).properties.point_path_id,noSurfIdxs);
+%   opsLayerData(end).properties.point_path_id = opsLayerData(end).properties.point_path_id(keepIdxs);
+%   opsLayerData(end).properties.twtt = opsLayerData(end).properties.twtt(keepIdxs);
+%   opsLayerData(end).properties.type = opsLayerData(end).properties.type(keepIdxs);
+%   opsLayerData(end).properties.quality = opsLayerData(end).properties.quality(keepIdxs);
   
   lyrCombined = []; % RESET COMBINED LAYERDATA STRUCTURE
   

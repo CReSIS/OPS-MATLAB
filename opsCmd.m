@@ -10,7 +10,7 @@
 %
 % =========================================================================
 
-global gOps;
+% global gOps;
 
 %% USER INPUT
 
@@ -21,8 +21,8 @@ gOps.sysUrl = 'http://192.168.111.222/';
 
 %% AUTOMATED SECTION (DONT MODFIY)
 
-gOps.dbUser = 'doesnt';
-gOps.dbPswd = 'doanything';
+gOps.dbUser = '';
+gOps.dbPswd = '';
 
 gOps.serverUrl = strcat(gOps.sysUrl,'ops/');
 gOps.geoServerUrl = strcat(gOps.sysUrl,'geoserver/');

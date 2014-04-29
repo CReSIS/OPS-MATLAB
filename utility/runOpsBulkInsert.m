@@ -28,16 +28,16 @@
 %   3: INSERT ATM LAYERS ONLY
 %   4: (1) AND (2)
 %   5: (1), (2), AND (3)
-settings.runType = 3;
+settings.runType = 4;
 
 % ----------------------------------------------------------------
 % paramFn: FILENAME.xls OF EXCEL CReSIS PARAMS SHEET
-settings.paramFn = 'rds_param_2011_Greenland_P3.xls';
+settings.paramFn = 'rds_param_2012_Antarctica_DC8.xls';
 
 % ----------------------------------------------------------------
 % location: LOCATION NAME ('arctic' OR 'antarctic')
 % settings.location = 'arctic';
-settings.location = 'arctic';
+settings.location = 'antarctic';
 
 % ----------------------------------------------------------------
 % sysName: SYSTEM NAME ('rds','snow','accum','kuband')
@@ -65,16 +65,22 @@ settings.layerFilter = inline('~isempty(regexp(x,''(^surface$|^bottom$)''))');
 %% OPTIONAL USER INPUT (COMMON DEFAULT PROPERTIES)
 
 % ----------------------------------------------------------------
-% pathSpacing: DISTANCE IN METERS TO SPACE THE PATH/LAYER POINTS (DEFAULT = 2.50m)
-settings.pathSpacing = 2.5;
+% pathSpacing: DISTANCE IN METERS TO SPACE THE PATH/LAYER POINTS (DEFAULT = 15m)
+settings.pathSpacing = 15;
 
 % ----------------------------------------------------------------
+% seasonGroup: STRING name of the group for the season (DEFAULT = 'cresis_private')
+% settings.seasonGroup = 'cresis_private';
+settings.seasonGroup = 'cresis_public';
+
+% ----------------------------------------------------------------
+% NO LONGER USED. SET seaonGroup to 'cresis_public'.
 % autoReleaseSeason: BOOLEAN, SHOULD THE SEASON AUTOMATICALLY BE PUBLIC? (DEFAULT = false)
-settings.autoReleaseSeason = true;
+% settings.autoReleaseSeason = false;
 
 % ----------------------------------------------------------------
 % logsOn: BOOLEAN, SHOULD THE COMMAND WINDOW BE LOGGED TO A TXT FILE?
-settings.logsOn = true;
+settings.logsOn = false;
 
 %% AUTOMATED SECTION
 

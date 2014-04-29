@@ -20,11 +20,19 @@ function [status,message] = opsCreatePath(sys,param)
 %     properties.frame_count = integer array
 %     properties.frame_start_gps_time = double array
 %
+% Optional Input:
+%     properties.season_group = string (default = 'cresis_private')
+%
 % Output:
 %   status: integer (0:Error,1:Success,2:Warning)
 %   message: status message or data
 %
 % Author: Kyle W. Purdon
+
+% SET SEASON_GROUP DEFAULTS
+if ~isfield(param.properties,'season_group')
+  param.properties.season_group = 'cresis_private';
+end
 
 % CONSTRUCT THE JSON STRUCTURE
 jsonStruct = struct('type','Feature','geometry',struct('type','LineString','coordinates',param.geometry.coordinates'),...

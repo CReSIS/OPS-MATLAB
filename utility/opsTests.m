@@ -7,6 +7,8 @@
 %
 % WARNING: THIS SHOULD BE DONE ON AND EMPTY DEVELOPMENT DATABASE ONLY.
 %
+% LEAVE THE CREATE USER AND LOGIN PROMPTS AS DEFAULTS
+%
 % Author: Kyle W. Purdon
 %
 % =========================================================================
@@ -23,12 +25,48 @@ end
 %% CREATE NEW LAYER
 clear param;
 param.properties.lyr_name = 'test';
-param.properties.lyr_group_name = 'testLayerGroup';
+param.properties.lyr_group_name = 'standard';
 param.properties.lyr_description = 'this is a test layer';
 [status,newLayer] = opsCreateLayer('rds',param);
 if status ~= 1
   warning(newLayer);
 end
+
+%% CREATE NEW LAYER (NOT IN USER DEFAULT ALLOCATED GROUP)
+clear param;
+param.properties.lyr_name = 'test1';
+param.properties.lyr_group_name = 'testLayerGroup';
+param.properties.lyr_description = 'this is a test layer 1';
+[status,newLayer2] = opsCreateLayer('rds',param);
+if status ~= 1
+  warning(newLayer2);
+end
+
+%% CREATE A NEW USER
+clear param;
+[status,newUser] = opsCreateUser();
+if status ~= 1
+  warning(newUser);
+end
+
+%% LOGIN THE NEW USER
+clear param;
+[status,loginNotice] = opsLoginUser();
+if status == 1
+  opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+elseif status ~= 1
+  warning(loginNotice);
+end
+
+%% GET THE NEW USERS PROFILE (NOW HANDLED IN opsLoginUser)
+opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
+% clear param;
+% [status,profile_notice] = opsGetUserProfileData();
+% if status == 1
+%   opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
+% elseif status ~= 1
+%   warning(profile_notice);
+% end
 
 %% DELETE LAYER
 clear param;
@@ -41,13 +79,13 @@ if ~(deletedLayer.properties.lyr_id == newLayer.properties.lyr_id)
   warning('layer deletion failed to delete the correct layer');
 end
 
-%% RELEASE LAYER GROUP
-clear param;
-param.properties.lyr_group_name = 'testLayerGroup';
-[status,pubGroup] = opsReleaseLayerGroup('rds',param);
-if status ~= 1
-  warning(pubGroup);
-end
+%% RELEASE LAYER GROUP (NEED TO ADD AUTH PERMISSIONS!)
+% clear param;
+% param.properties.lyr_group_name = '';
+% [status,pubGroup] = opsReleaseLayerGroup('rds',param);
+% if status ~= 1
+%   warning(pubGroup);
+% end
 
 %% GET LAYERS
 [status,allLayers] = opsGetLayers('rds');
@@ -61,7 +99,7 @@ end
 %% RECREATE DELETED LAYER
 clear param;
 param.properties.lyr_name = 'test';
-param.properties.lyr_group_name = 'testLayerGroup';
+param.properties.lyr_group_name = 'standard';
 param.properties.lyr_description = 'this is a test layer';
 [status,newLayer] = opsCreateLayer('rds',param);
 if status ~= 1
@@ -77,19 +115,36 @@ if ~any(newLayer.properties.lyr_id == allLayers.properties.lyr_id)
   warning('layer was not recreated');
 end
 
-%% QUERY (INSERT A TEST SEASON)
-[status,qData] = opsQuery('INSERT INTO rds_seasons (location_id,name,public) VALUES (1,''test'',false) returning id;');
+%% QUERY (INSERT A TEST SEASON [CRESIS_PRIVATE])
+[status,qData] = opsQuery('INSERT INTO rds_seasons (location_id,name,season_group_id) VALUES (1,''test1'',2) returning id;');
 if status ~= 1
   warning(qData);
 end
 seasonId = double(qData{1});
 
-%% RELEASE SEASON
-clear param;
-param.properties.season_name = 'test';
-[status,pubSeason] = opsReleaseSeason('rds',param);
+%% QUERY (INSERT A TEST SEASON [CRESIS_PUBLIC])
+[status,qData] = opsQuery('INSERT INTO rds_seasons (location_id,name,season_group_id) VALUES (1,''test'',1) returning id;');
 if status ~= 1
-  warning(pubSeason);
+  warning(qData);
+end
+seasonId = double(qData{1});
+
+%% RELEASE SEASON ( NOT IN AUTH, NO PUBLIC)
+% clear param;
+% param.properties.season_name = '';
+% [status,pubSeason] = opsReleaseSeason('rds',param);
+% if status ~= 1
+%   warning(pubSeason);
+% end
+
+%% GET SYSTEM INFO (MAKE SURE ONLY SEASON TEST1 SHOWS UP)
+[status,getSysData] = opsGetSystemInfo();
+if status == 1
+  if ~all(size(getSysData.properties.seasons) == [1 1])
+    warning('non-authorized seasons returned');
+  end
+else
+  warning(getSysData);
 end
 
 %% CREATE PATH (FAKE DATA)
@@ -135,6 +190,33 @@ param.properties.lyr_name = 'test';
 if status ~= 1
   warning(lpData);
 end
+
+%% CREATE LAYER POINTS (AGAIN, TEST DUPLICATES AND NAN DELETION)
+clear param;
+param.properties.point_path_id = pathData.properties.id;
+param.properties.username = 'kpurdon';
+param.properties.twtt = [0.00000241705663401991,0.00000251705663401991,NaN];
+param.properties.type = [1 2 1];
+param.properties.quality = [1 2 3];
+param.properties.lyr_name = 'test';
+[status,lpData] = opsCreateLayerPoints('rds',param);
+if status ~= 1
+  warning(lpData);
+end
+
+%% GET LAYER POINTS
+clear param;
+param.properties.point_path_id = pathData.properties.id;
+[status,lpGetData] = opsGetLayerPoints('rds',param);
+if status ~= 1
+  warning(lpGetData);
+else
+  if length(lpGetData.properties.gps_time) > 2
+    warning('Duplicates were created or NaN did not delete.');
+    keyboard;
+  end
+end
+
 
 %% DELETE LAYER POINTS
 clear param;
@@ -236,12 +318,28 @@ if deleteAfterCompleteion
   if status ~= 1
     warning(delData);
   end
+
+  param.properties.season = 'test1';
+  [status,delData] = opsDeleteBulk('rds',param);
+  if status ~= 1
+    warning(delData);
+  end
   
   fprintf('NO ERRORS OCCURED. TESTS PASSED\n');
   
-  %% CLEANUP (DELETE LAYER AND LAYER GROUP)
+  %% CLEANUP (DELETE LAYERS AND LAYER GROUPS)
   [status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test'' RETURNING name;');
+  [status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test1'' RETURNING name;');
   [status,cData] = opsQuery('DELETE FROM rds_layer_groups WHERE name=''testLayerGroup'' RETURNING name;');
+end
+
+%% LOGOUT THE NEW USER
+clear param;
+[status,logoutNotice] = opsLogoutUser();
+if status ~= 1
+  warning(logoutNotice);
+else
+  fprintf('%s\n',logoutNotice)
 end
 
 %% OTHER TESTS TO DO EVENTUALLY
@@ -250,6 +348,3 @@ end
 % LOAD WITH INITIAL DATA
 % CROSSOVERS
 % LAYER POINTS CSV/KML/...
-
-
-

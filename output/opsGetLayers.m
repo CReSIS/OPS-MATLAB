@@ -16,14 +16,30 @@ function [status,data] = opsGetLayers(sys)
 %
 % Author: Kyle W. Purdon, Trey Stafford
 
-% SEND THE COMMAND TO THE SERVER
+global gRadar;
+
+% CONSTRUCT THE JSON STRUCTURE
 opsCmd;
+param.properties.mat = true;
+opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+param.properties.userName = opsAuth.userName;
+param.properties.isAuthenticated = opsAuth.isAuthenticated;
+jsonStruct = struct('properties',param.properties);
+
+% CONVERT THE JSON STRUCTURE TO A JSON STRING
+try
+  jsonStr = tojson(jsonStruct);
+catch ME
+  jsonStr = savejson('',jsonStruct,'FloatFormat','%2.10f');
+end
+
+% SEND THE COMMAND TO THE SERVER
 if gOps.profileCmd
-  [jsonResponse,~] = opsUrlRead(strcat(gOps.serverUrl,'profile'),gOps.dbUser,gOps.dbPswd,...
-    'Post',{'app' sys 'data' '{"none":"none"}' 'view' 'getLayers'});
+  [jsonResponse,~] = opsUrlRead(strcat(gOps.serverUrl,'profile'),'','',...
+    'Post',{'app' sys 'data' jsonStr 'view' 'getLayers'});
 else
-  [jsonResponse,~] = opsUrlRead(strcat(gOps.serverUrl,'get/layers'),gOps.dbUser,gOps.dbPswd,...
-    'Post',{'app' sys 'data' '{"none":"none"}'});
+  [jsonResponse,~] = opsUrlRead(strcat(gOps.serverUrl,'get/layers'),'','',...
+    'Post',{'app' sys 'data' jsonStr});
 end
 
 % DECODE THE SERVER RESPONSE
