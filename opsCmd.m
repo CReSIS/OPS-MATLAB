@@ -17,6 +17,7 @@
 gOps.profileCmd = false; % THE OPS PROFILER WILL RUN AND RETURN PROFILING LOGS
 
 % gOps.sysUrl = 'https://ops.cresis.ku.edu/';
+% gOps.sysUrl = 'http://ops2.cresis.ku.edu/';
 gOps.sysUrl = 'http://192.168.111.222/';
 
 %% AUTOMATED SECTION (DONT MODFIY)

@@ -11,6 +11,7 @@ function opsBulkInsert(settings)
 %% SETUP DEFAULTS AND OTHER INPUTS
 
 global gRadar;
+opsCmd;
 
 % SET THE LOG BASE DIRECTORY
 if settings.logsOn
@@ -28,15 +29,19 @@ if ~isfield(settings,'pathSpacing') || isempty(settings.pathSpacing)
   settings.pathSpacing = 15;
 end
 
-% GET THE SYSTEM userName
-if ispc
-  settings.userName = getenv('username');
-else
-  [~,settings.userName] = system('whoami');
-  settings.userName = settings.userName(1:end-1);
+% LOGIN THE USER
+[status,loginNotice] = opsLoginUser();
+if status == 1
+  opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+  opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
+  settings.userName = opsAuth.userName;
+elseif status ~= 1
+  warning(loginNotice);
 end
-if strcmp(settings.userName,'')
-  settings.userName = 'unknown';
+
+% IF TRYING TO POST TO OPS/OPS2 VALIDATE THE USER CAN CREATE DATA
+if opsProfile.createData ~= 1 && ~strcmp(gOps.sysUrl,'http://192.168.111.222/')
+  error('User is not authorized to create data.');
 end
 
 % GET A BOOLEAN VALUE FOR EACH RUN OPTION
@@ -90,7 +95,6 @@ switch settings.runType
     runStr = 'path,layer,atm';
 end
 
-opsCmd;
 confirmParams = {sprintf('SERVER: \t %s',gOps.serverUrl),'',sprintf('SEASON NAME: \t %s',settings.seasonName),'',...
   sprintf('RADAR NAME: \t %s',settings.radarName),'',sprintf('RUN TYPE: \t %s',runStr),'',...
   sprintf('SYSTEM NAME: \t %s',settings.sysName),'',sprintf('PATH SPACING: \t %0.2f meters',settings.pathSpacing),'',...
