@@ -18,11 +18,41 @@ deleteAfterCompleteion = true;
 
 %% warning CHECK BEFORE STARTING
 opsCmd;
-if strcmp(gOps.serverUrl,'https://ops.cresis.ku.edu/ops/')
+if strcmp(gOps.serverUrl,{'https://ops.cresis.ku.edu/ops/','http://ops2.cresis.ku.edu/ops/'})
   warning('warning: DO NOT USE THIS FUNCTION ON THE PRODUCTION DATABASE');
 end
 
-%% CREATE NEW LAYER
+%% CREATE A NEW USER
+clear param;
+[status,newUser] = opsCreateUser();
+if status ~= 1
+  warning(newUser);
+end
+
+%% AUTHENTICATE THE NEW USER
+param = struct('properties',[]);
+[~,opsAuth,opsProfile] = opsAuthenticate(param);
+
+% %% LOGIN THE NEW USER
+% clear param;
+% [status,loginNotice] = opsLoginUser();
+% if status == 1
+%   opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+% elseif status ~= 1
+%   warning(loginNotice);
+% end
+% 
+% %% GET THE NEW USERS PROFILE (NOW HANDLED IN opsLoginUser)
+% opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
+% % clear param;
+% % [status,profile_notice] = opsGetUserProfileData();
+% % if status == 1
+% %   opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
+% % elseif status ~= 1
+% %   warning(profile_notice);
+% % end
+
+%% CREATE NEW LAYER GROUP
 clear param;
 param.properties.lyr_name = 'test';
 param.properties.lyr_group_name = 'standard';
@@ -41,32 +71,6 @@ param.properties.lyr_description = 'this is a test layer 1';
 if status ~= 1
   warning(newLayer2);
 end
-
-%% CREATE A NEW USER
-clear param;
-[status,newUser] = opsCreateUser();
-if status ~= 1
-  warning(newUser);
-end
-
-%% LOGIN THE NEW USER
-clear param;
-[status,loginNotice] = opsLoginUser();
-if status == 1
-  opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
-elseif status ~= 1
-  warning(loginNotice);
-end
-
-%% GET THE NEW USERS PROFILE (NOW HANDLED IN opsLoginUser)
-opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
-% clear param;
-% [status,profile_notice] = opsGetUserProfileData();
-% if status == 1
-%   opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
-% elseif status ~= 1
-%   warning(profile_notice);
-% end
 
 %% DELETE LAYER
 clear param;

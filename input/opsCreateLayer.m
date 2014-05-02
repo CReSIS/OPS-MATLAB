@@ -33,6 +33,7 @@ if ~isfield(param.properties,'lyr_description')
 end
 
 % CONSTRUCT THE JSON STRUCTURE
+[param,~,~] = opsAuthenticate(param);
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCTURE TO A JSON STRING

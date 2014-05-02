@@ -29,20 +29,8 @@ if ~isfield(settings,'pathSpacing') || isempty(settings.pathSpacing)
   settings.pathSpacing = 15;
 end
 
-% LOGIN THE USER
-[status,loginNotice] = opsLoginUser();
-if status == 1
-  opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
-  opsProfile = load(fullfile(gRadar.tmp_path,'ops.profile.mat'));
-  settings.userName = opsAuth.userName;
-elseif status ~= 1
-  warning(loginNotice);
-end
-
-% IF TRYING TO POST TO OPS/OPS2 VALIDATE THE USER CAN CREATE DATA
-if opsProfile.createData ~= 1 && ~strcmp(gOps.sysUrl,'http://192.168.111.222/')
-  error('User is not authorized to create data.');
-end
+% AUTHENTICATE THE USER
+% [param,~,~] = opsAuthenticate(settings);
 
 % GET A BOOLEAN VALUE FOR EACH RUN OPTION
 insertPathCmd = any(settings.runType == [1,4,5]);

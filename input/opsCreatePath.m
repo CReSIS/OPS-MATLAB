@@ -35,6 +35,7 @@ if ~isfield(param.properties,'season_group')
 end
 
 % CONSTRUCT THE JSON STRUCTURE
+[param,~,~] = opsAuthenticate(param);
 jsonStruct = struct('type','Feature','geometry',struct('type','LineString','coordinates',param.geometry.coordinates'),...
     'properties',param.properties);
 

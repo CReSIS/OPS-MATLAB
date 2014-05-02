@@ -18,7 +18,13 @@ global gRadar;
 % CONSTRUCT THE JSON STRUCTURE
 opsCmd;
 param.properties.mat = true;
-opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+
+opsAuthFn = fullfile(gRadar.tmp_path,'ops.mat');
+if exist(opsAuthFn,'file')
+  opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+else
+  opsAuth.isAuthenticated = false;
+end
 
 if opsAuth.isAuthenticated
   [password, userName] = passwordEntryDialog('enterUserName', true,...

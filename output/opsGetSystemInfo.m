@@ -17,14 +17,8 @@ function [status,data] = opsGetSystemInfo()
 %
 % Author: Kyle W. Purdon
 
-global gRadar;
-
 % CONSTRUCT THE JSON STRUCTURE
-opsCmd;
-param.properties.mat = true;
-opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
-param.properties.userName = opsAuth.userName;
-param.properties.isAuthenticated = opsAuth.isAuthenticated;
+[param,~,~] = opsAuthenticate(struct('properties',[]));
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCTURE TO A JSON STRING
@@ -35,6 +29,7 @@ catch ME
 end
 
 % SEND THE COMMAND TO THE SERVER
+opsCmd;
 if gOps.profileCmd
   [jsonResponse,~] = opsUrlRead(strcat(gOps.serverUrl,'profile'),'','',...
     'Post',{'app' '' 'data' jsonStr 'view' 'getSystemInfo'});

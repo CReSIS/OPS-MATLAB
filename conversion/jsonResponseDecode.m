@@ -47,8 +47,8 @@ else
   
   if status == 0
     
-    error(data); % THROW ERROR ON FAILURE
     outData = data;
+    error(data); % THROW ERROR ON FAILURE
     return
     
   elseif status == 2
