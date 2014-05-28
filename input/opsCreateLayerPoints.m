@@ -8,7 +8,6 @@ function [status,message] = opsCreateLayerPoints(sys,param)
 %   sys: (string) sys name ('rds','accum','snow',...)
 %   param: structure with fields
 %     properties.point_path_id = integer array 
-%     properties.username = string
 %     properties.twtt = double array
 %     properties.type = integer arry (0,1 or 2)
 %     properties.quality = integer array (1,2 or 3)

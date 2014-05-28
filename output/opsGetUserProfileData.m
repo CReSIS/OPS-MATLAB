@@ -12,13 +12,21 @@ function [status,message] = opsGetUserProfileData()
 %   message: status message
 %   data: this is written to the gRadar.tmp_path/opsAuth.mat file
 %       properties.rds_season_groups = (string or cell of strings)
+%       properties.rds_season_group_ids = (integer or array of integers)
 %       properties.rds_layer_groups = (string or cell of strings)
+%       properties.rds_layer_group_ids = (integer or array of integers)
 %       properties.accum_season_groups = (string or cell of strings)
+%       properties.accum_season_group_ids = (integer or array of integers)
 %       properties.accum_layer_groups = (string or cell of strings)
+%       properties.accum_layer_group_ids = (integer or array of integers)
 %       properties.snow_season_groups = (string or cell of strings)
+%       properties.snow_season_group_ids = (integer or array of integers)
 %       properties.snow_layer_groups = (string or cell of strings)
+%       properties.snow_layer_groups_ids = (integer or array of integers)
 %       properties.kuband_season_groups = (string or cell of strings)
+%       properties.kuband_season_group_ids = (integer or array of integers)
 %       properties.kuband_layer_groups = (string or cell of strings)
+%       properties.kuband_layer_group_ids = (integer or array of integers)
 %       properties.layerGroupRelease = (boolean) can the user release layergroups?
 %       properties.seasonRelease = (boolean) can the user release seasons?
 %       properties.createData = (boolean) can the user create new data?

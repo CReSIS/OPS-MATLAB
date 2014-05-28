@@ -69,7 +69,6 @@ opsAtmData.properties.twtt = (pathData.properties.elev-interp1(lidar.gps_time,li
 opsAtmData.properties.type = ones(size(pathData.properties.id))*2;
 opsAtmData.properties.quality = ones(size(pathData.properties.id));
 opsAtmData.properties.lyr_name = 'atm';
-opsAtmData.properties.username = settings.userName;
 
 % REMOVE GAPS FROM OUTPUTS
 opsAtmData.properties.point_path_id = opsAtmData.properties.point_path_id(~dataGapIdxs);

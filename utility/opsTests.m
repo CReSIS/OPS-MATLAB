@@ -18,7 +18,7 @@ deleteAfterCompleteion = true;
 
 %% warning CHECK BEFORE STARTING
 opsCmd;
-if strcmp(gOps.serverUrl,{'https://ops.cresis.ku.edu/ops/','http://ops2.cresis.ku.edu/ops/'})
+if any(strcmp(gOps.serverUrl,{'https://ops.cresis.ku.edu/ops/','http://ops2.cresis.ku.edu/ops/'}))
   warning('warning: DO NOT USE THIS FUNCTION ON THE PRODUCTION DATABASE');
 end
 
@@ -74,8 +74,8 @@ end
 
 %% DELETE LAYER
 clear param;
-param.properties.lyr_name = 'test';
-[~,deletedLayer] = opsDeleteLayer('rds',param);
+param.properties.lyr_name = 'test1';
+[status,deletedLayer] = opsDeleteLayer('rds',param);
 if status ~= 1
   warning(deletedLayer);
 end
@@ -96,18 +96,18 @@ end
 if status ~= 1
   warning(allLayers);
 end
-if any(newLayer.properties.lyr_id == allLayers.properties.lyr_id)
+if any(newLayer2.properties.lyr_id == allLayers.properties.lyr_id)
   warning('layer was not deleted');
 end
 
 %% RECREATE DELETED LAYER
 clear param;
-param.properties.lyr_name = 'test';
-param.properties.lyr_group_name = 'standard';
-param.properties.lyr_description = 'this is a test layer';
-[status,newLayer] = opsCreateLayer('rds',param);
+param.properties.lyr_name = 'test1';
+param.properties.lyr_group_name = 'testLayerGroup';
+param.properties.lyr_description = 'this is a test layer 1';
+[status,newLayer2] = opsCreateLayer('rds',param);
 if status ~= 1
-  warning(newLayer);
+  warning(newLayer2);
 end
 
 %% GET LAYERS (TO CONFIRM LAYER WAS RECREATED)
@@ -115,7 +115,7 @@ end
 if status ~= 1
   warning(allLayers);
 end
-if ~any(newLayer.properties.lyr_id == allLayers.properties.lyr_id)
+if ~any(newLayer2.properties.lyr_id == allLayers.properties.lyr_id)
   warning('layer was not recreated');
 end
 

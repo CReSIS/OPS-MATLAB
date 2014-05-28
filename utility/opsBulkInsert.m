@@ -29,9 +29,6 @@ if ~isfield(settings,'pathSpacing') || isempty(settings.pathSpacing)
   settings.pathSpacing = 15;
 end
 
-% AUTHENTICATE THE USER
-% [param,~,~] = opsAuthenticate(settings);
-
 % GET A BOOLEAN VALUE FOR EACH RUN OPTION
 insertPathCmd = any(settings.runType == [1,4,5]);
 insertLayerCmd = any(settings.runType == [2,4,5]);
@@ -142,18 +139,40 @@ if insertPathCmd
         end
       end
       
-      % INTERPOLATE RECORDS GPS TIME ONTO THE GIVEN SPACING (DEFAULT = 2.5m)
+      % INTERPOLATE RECORDS GPS TIME ONTO THE GIVEN SPACING (DEFAULT = 15m)
       alongTrack = geodetic_to_along_track(records.lat,records.lon,records.elev);
       newAlongTrack = 0:settings.pathSpacing:alongTrack(end);
-      outGpsTime = interp1(alongTrack,records.gps_time,newAlongTrack);
+      outGpsTime = interp1(alongTrack,records.gps_time,newAlongTrack,'PCHIP');
       
-      % INTERPOLATEE RECORDS VALUES ONTO NEW GPS TIME
-      outLon = interp1(records.gps_time,records.lon,outGpsTime);
-      outLat = interp1(records.gps_time,records.lat,outGpsTime);
-      outElev = interp1(records.gps_time,records.elev,outGpsTime);
-      outRoll = interp1(records.gps_time,records.roll,outGpsTime);
-      outPitch = interp1(records.gps_time,records.pitch,outGpsTime);
-      outHeading = interp1(records.gps_time,records.heading,outGpsTime);
+      % INTERPOLATE RECORDS VALUES ONTO NEW GPS TIME
+      outLon = interp1(records.gps_time,records.lon,outGpsTime,'PCHIP');
+      outLat = interp1(records.gps_time,records.lat,outGpsTime,'PCHIP');
+      outElev = interp1(records.gps_time,records.elev,outGpsTime,'PCHIP');
+      outRoll = interp1(records.gps_time,records.roll,outGpsTime,'PCHIP');
+      outPitch = interp1(records.gps_time,records.pitch,outGpsTime,'PCHIP');
+      outHeading = interp1(records.gps_time,records.heading,outGpsTime,'PCHIP');
+      
+      % ERROR CHECK OUTPUT DATA
+      if any(find(outHeading>(pi*2))) || any(find(outHeading<(-pi*2)))
+        warning('OUTPUT HEADING OUT OF BOUND 2pi <> -2pi');
+        keyboard;
+      end
+      if any(find(outPitch>(pi*2))) || any(find(outPitch<(-pi*2)))
+        warning('OUTPUT PITCH OUT OF BOUND 2pi <> -2pi');
+        keyboard;
+      end
+      if any(find(outRoll>(pi*2))) || any(find(outRoll<(-pi*2)))
+        warning('OUTPUT ROLL OUT OF BOUND 2pi <> -2pi');
+        keyboard;
+      end
+      if any(find(outLon>180)) || any(find(outLon<-180))
+        warning('OUTPUT LONGITUDE OUT OF BOUND 180 <> -180');
+        keyboard;
+      end
+      if any(find(outLat>90)) || any(find(outLat<-90))
+        warning('OUTPUT LATITUDE OUT OF BOUND 90 <> -90');
+        keyboard;
+      end
       
       % BUILD STRUCTURE FOR opsCreatePath()
       outData.geometry.coordinates = [outLon' outLat'];
@@ -192,8 +211,7 @@ if insertPathCmd
     catch ME
       
       diary OFF
-      fprintf('\n');
-      warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
+      ME.getReport()
       failedSegments{end+1} = param.day_seg; % STORE THE SEGMENT IF ANYTHING FAILED
       
     end
@@ -208,16 +226,6 @@ if insertPathCmd
     fprintf('No layer points will be loaded for these segments.\n\n');
   end
   
-%   %   AUTOMATICALLY RELEASE THE SEASON IF REQUESTED (NEED TO REVISE WITH SEASON_GROUP.
-%   if settings.autoReleaseSeason
-%     clear param;
-%     param.properties.season_name = settings.seasonName;
-%     [status,message] = opsReleaseSeason(settings.sysName,param);
-%     if status == 1
-%       fprintf('%s\n',message);
-%     end
-%   end
-  
   diary OFF % STOP LOGGING
   
 end
@@ -226,9 +234,17 @@ end
 
 if insertLayerCmd
   
+  mstart = tic;
+  
   failedFrames = {}; % STORE FRAMES THAT FAIL
   failedLayers = {}; % STORE LAYERS THAT FAIL
   frameName = '';
+  segDayObj = [];
+  opsLayerDataSub = [];
+  
+  if ~exist('failedSegments','var')
+    failedSegments = {};
+  end
   
   % START LOGGING
   if settings.logsOn
@@ -236,148 +252,185 @@ if insertLayerCmd
     diary(pathLogFn);
   end
   
-  % FOR EACH SEGMENT PROCESS THE INPUT AND PUSH THE DATA TO THE SERVER
+  % BUILD THE DAY / DAYSEG LIST FOR PROCESSING
   for paramIdx = 1:length(params)
     
-    try
-      
-      % CONFIRM THAT GENERIC IS NOT FLAGGED
-      param = params(paramIdx);
-      if param.cmd.generic ~= 1
-        continue;
-      end
-      
-      % DO NOT LOAD LAYERS FOR FAILTED SEGMENTS
-      if ~exist('failedSegments','var')
-        failedSegments = {};
-      end
-      if any(strcmp(param.day_seg,failedSegments))
-        fprintf('Skipping layers for segment %s, path loading failed for this segment.\n',param.day_seg);
-        continue;
-      end
-      
-      fprintf('Loading layers for segment %s:\n',param.day_seg);
-      
-      framesFn = ct_filename_support(param,'','frames'); % GET THE FRAMES FILENAME
-      load(framesFn); % LOAD FRAMES FILE
-      
-      % CROSS VERIFY FRAMES FILE WITH PARAM.CMD.FRMS LIST
-      if isempty(param.cmd.frms)
-        param.cmd.frms = 1:length(frames.frame_idxs);
-      end
-      [validFrms,keepIdxs] = intersect(param.cmd.frms, 1:length(frames.frame_idxs));
-      if length(validFrms) ~= length(param.cmd.frms)
-        badMask = ones(size(param.cmd.frms));
-        badMask(keepIdxs) = 0;
-        warning('Nonexistent frames in param.cmd.frms (e.g. frame "%g" is invalid). These will be removed.',param.cmd.frms(find(badMask,1)));
-        param.cmd.frms = validFrms;
-      end
-      
-      % SET THE BASE LAYERDATA DIRECTORY
-      layerBaseDir = ct_filename_out(param,settings.layerDataPath,param.day_seg);
-      
-      for frmIdx = 1:length(param.cmd.frms)
-        
-        start = tic; % SET UP TIMING
-        
-        % GET THE LAYERDATA FILENAME
-        layerFnName = sprintf('Data_%s_%03d.mat',param.day_seg,param.cmd.frms(frmIdx));
-        layerFn = fullfile(layerBaseDir,layerFnName);
-        
-        frameName = layerFn(end-18:end-4); % STORE THE NAME OF THE CURRENT FRAME
-        
-        fprintf('\tLoading frame %s:\n',frameName);
-        
-        if ~exist(layerFn,'file')
-          warning('LayerData file %s does not exist, skipping this frame.',layerFnName);
-          failedFrames{end+1} = layerFnName;
-          continue;
-        end
-        
-        opsLayerData = layerDataToOps(layerFn,settings); % CONVERT layerData TO OPS layerData
-        
-        % CHECK FOR EMPTY LAYERS
-        emptyLayerIdxs = [];
-        for layerIdx = 1:length(opsLayerData)
-          if isempty(opsLayerData(layerIdx).properties.twtt)
-            emptyLayerIdxs(end+1) = layerIdx;
-          end
-        end
-        opsLayerData(emptyLayerIdxs) = []; % SET THE EMPTY STRUCTURES
-        if isempty(opsLayerData)
-          message = 'WARNING: NO LAYERS TO INSERT, LAYERS ARE EMPTY'; % SAVE MESSAGE IF ALL ARE EMPTY
-          fprintf('\n\t\t\t-> Time: Matlab %2.2fs Python %2.2fs\n',0.00,0.00);
-          fprintf('\t\t\t-> Status: %s\n',message);
-          failedFrames{end+1} = frameName;
-        end
-        
-        mstop = toc(start); % RECORD MATLAB COMPUTATION TIME
-        
-        for layerIdx = 1:length(opsLayerData)
-          
-          try
-            
-            ptic = tic;
-            
-            fprintf('\t\tLoading layer %s ...',opsLayerData(layerIdx).properties.lyr_name);
-            
-            % PUSH DATA TO THE SERVER
-            [status,message] = opsCreateLayerPoints(settings.sysName,opsLayerData(layerIdx));
-            
-            pstop = toc(ptic);
-            
-            if status ~= 1
-              
-              failedLayers{end+1} = opsLayerData(layerIdx).properties.lyr_name;
-              fprintf('\n');
-              warning(message);
-              
-            else
-              
-              fprintf('\n\t\t\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
-              fprintf('\t\t\t-> Status: %s\n',message);
-              
-            end
-            
-          catch ME
-            
-            fprintf('\n');
-            warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
-            failedLayers{end+1} = {frameName,opsLayerData(layerIdx).properties.lyr_name}; % STORE THE LAYER NAME IF ANYTHING FAILED
-            continue
-            
-          end
-        end
-      end
-      
-    catch ME
-      
-      fprintf('\n');
-      warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
-      failedFrames{end+1} = frameName; % STORE THE FRAME NAME IF ANYTHING FAILED
-      continue
-      
+    % CONFIRM THAT GENERIC IS NOT FLAGGED
+    param = params(paramIdx);
+    if param.cmd.generic ~= 1
+      continue;
     end
     
-    % REPORT FAILED FRAMES
-    if ~isempty(failedFrames)
-      fprintf('\n\nThere were issues loading data for frames:\n');
-      for failIdx = 1:length(failedFrames)
-        fprintf('\t%s\n',failedFrames{failIdx});
-      end
+    % DO NOT LOAD LAYERS FOR FAILTED SEGMENTS
+    if any(strcmp(param.day_seg,failedSegments))
+      fprintf('Skipping layers for segment %s, path loading failed for this segment.\n',param.day_seg);
+      continue;
     end
     
-    % REPORT FAILED LAYERS
-    if ~isempty(failedLayers)
-      fprintf('\n\nThere were issues loading data for layers:\n');
-      for failIdx = 1:length(failedLayers)
-        fprintf('\t%s %s\n',failedLayers{failIdx}{1},failedLayers{failIdx}{2});
-      end
+    load(ct_filename_support(param,'','frames')); % LOAD FRAMES FILE
+    
+    % CROSS VERIFY FRAMES FILE WITH PARAM.CMD.FRMS LIST
+    if isempty(param.cmd.frms)
+      param.cmd.frms = 1:length(frames.frame_idxs);
+    end
+    [validFrms,keepIdxs] = intersect(param.cmd.frms, 1:length(frames.frame_idxs));
+    if length(validFrms) ~= length(param.cmd.frms)
+      badMask = ones(size(param.cmd.frms));
+      badMask(keepIdxs) = 0;
+      warning('Nonexistent frames in param.cmd.frms (e.g. frame "%g" is invalid). These will be removed.',param.cmd.frms(find(badMask,1)));
+      param.cmd.frms = validFrms;
     end
     
-    diary OFF
+    for frmId = 1:length(param.cmd.frms)
+      
+      % BUILD UP DAY/DAYSEG/DAYSEGFRM OBJECT
+      segDayObj = cat(1,segDayObj,{param.day_seg(1:end-3) param.day_seg sprintf('%s_%03d',param.day_seg,frmId)});
+      
+    end
     
   end
+  
+  % GET UNIQUE LIST OF DAYS
+  segDays = unique(segDayObj(:,1));
+  
+  % PROCESS EACH DAY
+  for segDayIdx = 1:length(segDays)
+    
+    curDay = segDays{segDayIdx};
+    fprintf('Processing data for day %s ...\n',curDay);
+    
+    % LOAD ALL THE LAYERDATA FOR THE CURRENT DAY
+    layerBaseDir = ct_filename_out(param,settings.layerDataPath,'',true);
+    dayLayerData = opsMergeLayerData(layerBaseDir,curDay);
+    opsLayerData = layerDataToOps(dayLayerData,settings);
+    
+    % CHECK FOR EMPTY LAYERS
+    emptyLayerIdxs = [];
+    for layerIdx = 1:length(opsLayerData)
+      if isempty(opsLayerData(layerIdx).properties.twtt)
+        emptyLayerIdxs(end+1) = layerIdx;
+      end
+    end
+    opsLayerData(emptyLayerIdxs) = []; % SET THE EMPTY STRUCTURES
+    if isempty(opsLayerData)
+      message = 'WARNING: NO LAYERS TO INSERT, LAYERS ARE EMPTY'; % SAVE MESSAGE IF ALL ARE EMPTY
+      fprintf('\n\t\t\t-> Time: Matlab %2.2fs Python %2.2fs\n',0.00,0.00);
+      fprintf('\t\t\t-> Status: %s\n',message);
+      failedFrames{end+1} = frameName;
+    end
+    
+    % GET A LIST OF SEGMENTS FOR THE CURRENT DAY
+    segList = unique(segDayObj(find(strcmp(segDayObj(:,1),curDay)),2));
+    
+    % PROCESS EACH SEGMENT
+    for segIdx = 1:length(segList)
+      
+      curSeg = segList{segIdx};
+      fprintf('Loading layers for segment %s ...\n',curSeg);
+      
+      segInfoParam.properties.segment = curSeg;
+      [~,segData] = opsGetSegmentInfo(settings.sysName,segInfoParam);
+      
+      mstop = toc(mstart); % RECORD MATLAB COMPUTATION TIME
+      
+      % PROCESS EACH FRAME
+      for frmIdx = 1:length(segData.properties.frame)
+        
+        try
+          curFrame = segData.properties.frame{frmIdx};
+          if ~any(strcmp(segDayObj(:,3),curFrame))
+            continue;
+          end
+          
+          fprintf('\tLoading frame %s ...\n',curFrame);
+          
+          % PROCESS EACH LAYER
+          for layerIdx = 1:length(opsLayerData)
+            
+            curLayer = opsLayerData(layerIdx).properties.lyr_name;
+            
+            try
+              
+              ptic = tic;
+              fprintf('\t\tLoading layer %s ...',curLayer);
+              
+              % GET POINT PATH IDS FOR FRAME TIME RANGE
+              pathParam.properties.location = settings.location;
+              pathParam.properties.season = settings.seasonName;
+              pathParam.properties.start_gps_time = segData.properties.start_gps_time(frmIdx);
+              pathParam.properties.stop_gps_time = segData.properties.stop_gps_time(frmIdx);
+              [~,pathData] = opsGetPath(settings.sysName,pathParam);
+              [~,keepIdxs] = ismember(pathData.properties.id,opsLayerData(layerIdx).properties.point_path_id);
+              keepIdxs = keepIdxs(find(keepIdxs~=0));
+              
+              % SUBSET OPSLAYERDATA TO FRAME
+              opsLayerDataSub.properties.point_path_id = opsLayerData(layerIdx).properties.point_path_id(keepIdxs);
+              opsLayerDataSub.properties.twtt = opsLayerData(layerIdx).properties.twtt(keepIdxs); 
+              opsLayerDataSub.properties.type = opsLayerData(layerIdx).properties.type(keepIdxs); 
+              opsLayerDataSub.properties.quality = opsLayerData(layerIdx).properties.quality(keepIdxs); 
+              opsLayerDataSub.properties.lyr_name = opsLayerData(layerIdx).properties.lyr_name; 
+
+              % PUSH DATA TO THE SERVER
+              [status,message] = opsCreateLayerPoints(settings.sysName,opsLayerDataSub);
+              pstop = toc(ptic);
+              
+              opsLayerDataSub = []; % RESET SUBSET STRUCTURE
+              
+              if status ~= 1
+                
+                % REPORT A FAILED LAYER
+                failedLayers{end+1} = {curFrame,opsLayerData(layerIdx).properties.lyr_name};
+                fprintf('\n');
+                warning(message);
+                
+              else
+                
+                fprintf('\n\t\t\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
+                fprintf('\t\t\t-> Status: %s\n',message);
+                
+              end
+              
+            catch ME
+              
+              % REPORT A FAILED FRAME
+              fprintf('\n');
+              warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
+              failedLayers{end+1} = {curFrame,opsLayerData(layerIdx).properties.lyr_name}; % STORE THE LAYER NAME IF ANYTHING FAILED
+              continue
+              
+            end
+          end
+          
+        catch ME
+          
+          fprintf('\n');
+          warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
+          failedFrames{end+1} = curFrame; % STORE THE FRAME NAME IF ANYTHING FAILED
+          continue
+          
+        end
+      end
+      mstart = tic; % RESTART MATLAB TIMING (END OF SEGMENT LOAD)
+    end
+  end
+  
+  % REPORT FAILED FRAMES
+  if ~isempty(failedFrames)
+    fprintf('\n\nThere were issues loading data for frames:\n');
+    for failIdx = 1:length(failedFrames)
+      fprintf('\t%s\n',failedFrames{failIdx});
+    end
+  end
+  
+  % REPORT FAILED LAYERS
+  if ~isempty(failedLayers)
+    fprintf('\n\nThere were issues loading data for layers:\n');
+    for failIdx = 1:length(failedLayers)
+      fprintf('\t%s %s\n',failedLayers{failIdx}{1},failedLayers{failIdx}{2});
+    end
+  end
+  
+  diary OFF
 end
 
 %% ATM INSERTION
@@ -385,6 +438,11 @@ end
 if insertAtmCmd
   
   atmFailed=false;
+  segDayObj = [];
+  
+  if ~exist('failedSegments','var')
+    failedSegments = {};
+  end
   
   % START LOGGING
   if settings.logsOn
@@ -394,38 +452,59 @@ if insertAtmCmd
   
   start = tic; % SET UP TIMING
   
-  % FOR EACH SEGMENT PROCESS THE INPUT AND PUSH THE DATA TO THE SERVER
+  % BUILD THE DAY / DAYSEG LIST FOR PROCESSING
   for paramIdx = 1:length(params)
     
+    % CONFIRM THAT GENERIC IS NOT FLAGGED
+    param = params(paramIdx);
+    if param.cmd.generic ~= 1
+      continue;
+    end
+    
+    % DO NOT LOAD LAYERS FOR FAILTED SEGMENTS
+    if any(strcmp(param.day_seg,failedSegments))
+      fprintf('Skipping layers for segment %s, path loading failed for this segment.\n',param.day_seg);
+      continue;
+    end
+    
+    % BUILD UP DAY/DAYSEG/DAYSEGFRM OBJECT
+    segDayObj = cat(1,segDayObj,{param.day_seg(1:end-3) param.day_seg});
+    
+  end
+  
+  % CREATE PARAM FOR ATM LAYER
+  opsAtmLayerParam.properties.lyr_name = 'atm';
+  opsAtmLayerParam.properties.lyr_group_name = 'lidar';
+  opsAtmLayerParam.properties.lyr_description = 'atm l2 lidar surface';
+  opsAtmLayerParam.properties.public = true;
+  
+  % PUSH DATA TO THE SERVER
+  try
+    [~,~] = opsCreateLayer(settings.sysName,opsAtmLayerParam);
+  catch ME
+    fprintf('\t-> Layer ''atm'' exists, layer points will be added to layer.\n');
+  end
+  
+  % GET UNIQUE LIST OF DAYS
+  segDays = unique(segDayObj(:,1));
+  
+  % PROCESS EACH DAY
+  for segDayIdx = 1:length(segDays)
+    
     try
-      
-      % CONFIRM THAT GENERIC IS NOT FLAGGED
-      param = params(paramIdx);
-      if param.cmd.generic ~= 1
-        continue;
-      end
-      
-      % DO NOT LOAD LAYERS FOR FAILTED SEGMENTS
-      if ~exist('failedSegments','var')
-        failedSegments = {};
-      end
-      if any(strcmp(param.day_seg,failedSegments))
-        fprintf('Skipping atm layer for segment %s, path loading failed for this segment.\n',param.day_seg);
-        continue;
-      end
-      
-      fprintf('Loading atm layer for segment %s ...\n',param.day_seg);
+      curDay = segDays{segDayIdx};
+      fprintf('Loading ATM data for day %s ...\n',curDay);
       
       % GET ATM L2 FILENAMES
-      atmFns = get_filenames_atm(settings.location,param.day_seg,settings.data_support_path);
+      atmFns = get_filenames_atm(settings.location,curDay,settings.data_support_path);
       if isempty(atmFns)
         warning('No atm data. Skipping segment %s',param.day_seg);
         continue;
       end
       
       % CREATE ATM PARAM
-      atmParam = struct('year',ones(1,length(atmFns))*str2double(param.day_seg(1:4)),'month',ones(1,length(atmFns))*str2double(param.day_seg(5:6)),...
-        'day',ones(1,length(atmFns))*str2double(param.day_seg(7:8)),'time_reference','gps');
+      atmParam = struct('year',ones(1,length(atmFns))*str2double(curDay(1:4)),'month',ones(1,length(atmFns))*str2double(curDay(5:6)),...
+        'day',ones(1,length(atmFns))*str2double(curDay(7:8)),'time_reference','gps');
       
       % CONVERT ATM L2 TO OPS FORMAT
       opsAtmData = atmToOps(atmFns,atmParam,settings);
@@ -433,19 +512,7 @@ if insertAtmCmd
       mstop = toc(start); % RECORD MATLAB COMPUTATION TIME
       ptic = tic;
       
-      % CREATE PARAM FOR ATM LAYER
-      opsAtmLayerParam.properties.lyr_name = 'atm';
-      opsAtmLayerParam.properties.lyr_group_name = 'lidar';
-      opsAtmLayerParam.properties.lyr_description = 'atm l2 lidar surface';
-      opsAtmLayerParam.properties.public = true;
-      
       % PUSH DATA TO THE SERVER
-      try
-      [~,~] = opsCreateLayer(settings.sysName,opsAtmLayerParam);
-      catch ME
-        fprintf('\t-> Layer ''atm'' exists, layer points will be added to layer.\n');
-      end
-      
       [status,message] = opsCreateLayerPoints(settings.sysName,opsAtmData);
       
       pstop = toc(ptic);
@@ -460,17 +527,16 @@ if insertAtmCmd
         
         fprintf('\t-> Time: Matlab %2.2fs Python %2.2fs\n',mstop,pstop);
         fprintf('\t-> Status: %s\n',message);
-        
+
       end
       
     catch ME
-      
       fprintf('\n');
       warning(sprintf('%s at line %d in file %s.',ME.message,ME.stack(1).line,ME.stack(1).name));
       atmFailed = true;
       continue
-      
     end
+    
   end
   
   % REPORT FAILED ATM

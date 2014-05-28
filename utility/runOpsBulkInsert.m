@@ -28,7 +28,7 @@
 %   3: INSERT ATM LAYERS ONLY
 %   4: (1) AND (2)
 %   5: (1), (2), AND (3)
-settings.runType = 4;
+settings.runType = 2;
 
 % ----------------------------------------------------------------
 % paramFn: FILENAME.xls OF EXCEL CReSIS PARAMS SHEET
@@ -66,7 +66,7 @@ settings.layerFilter = inline('~isempty(regexp(x,''(^surface$|^bottom$)''))');
 
 % ----------------------------------------------------------------
 % pathSpacing: DISTANCE IN METERS TO SPACE THE PATH/LAYER POINTS (DEFAULT = 15m)
-settings.pathSpacing = 15;
+settings.pathSpacing = 100;
 
 % ----------------------------------------------------------------
 % seasonGroup: STRING name of the group for the season (DEFAULT = 'cresis_private')

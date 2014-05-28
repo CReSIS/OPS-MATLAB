@@ -1,4 +1,4 @@
-function opsLayerData = layerDataToOps(layerDataFn,settings)
+function opsLayerData = layerDataToOps(lyr,settings)
 % opsLayerData = layerDataToOps(layerDataFn,settings)
 %
 % 1. Converts CReSIS layerData to the OPS format.
@@ -7,7 +7,7 @@ function opsLayerData = layerDataToOps(layerDataFn,settings)
 % 4. Removes any duplicate points in the layerData (all output are set to type=auto/2)
 %
 % Input:
-%   layerDataFn: Absolute path to a CReSIS layerData (.m) file.
+%   data: Combined layerData structure from opsMergeLayerData.
 %   settings: structure with the following fields
 %     .layerFilter (optional) = REGULAR EXPRESSION OF LAYER NAMES TO INSERT
 %       for more information on layerFilter see also runOpsBulkInsert.m
@@ -18,7 +18,6 @@ function opsLayerData = layerDataToOps(layerDataFn,settings)
 % Output:
 %   opsLayerData = structure with fields:
 %       properties.point_path_id = integer array 
-%       properties.user = string
 %       properties.twtt = double array
 %       properties.type = integer arry (1 or 2) 1:manual, 2:auto
 %       properties.quality = integer array (1, 2 or 3) 1:good, 2:moderate, 3:derived
@@ -36,25 +35,28 @@ if ~isfield(settings,'layerFilter') || isempty(settings.layerFilter)
   settings.layerFilter = inline('~isempty(regexp(x,''.*''))');
 end
 
-% LOAD THE LAYERDATA FILE
-lyr = load(layerDataFn,'GPS_time','Latitude','Longitude','Elevation','layerData');
+% % LOAD THE LAYERDATA FILE
+% lyr = load(layerDataFn,'GPS_time','Latitude','Longitude','Elevation','layerData');
+% 
+% % LOAD ECHOGRAM DATA IF LAYERDATA DOES NOT EXIST IN FILE
+% if ~isfield(lyr, 'layerData')
+%   lyr = load(layerData_fn,'GPS_time','Latitude','Longitude','Elevation','Surface','Truncate_Bins','Elevation_Correction','Time');
+%   lyr = uncompress_echogram(lyr);
+%   lyr.layerData{1}.value{1}.data = NaN*zeros(size(lyr.Surface));
+%   lyr.layerData{1}.value{2}.data = lyr.Surface;
+%   lyr.layerData{1}.quality = ones(size(lyr.Surface));
+% end
+% 
+% % DONT SUPPORT NEW LAYERDATA FOR NOW (CRESIS > OPS ONLY)
+% % CHECK WHICH LAYERDATA FORMAT THIS IS (CReSIS OR OPS)
+% % newLd = false;
+% if ~isfield(lyr.layerData{1},'value')
+%   error('NEW LAYERDATA FORMAT NOT SUPPORTED YET')
+%   % newLd = true;
+% end
 
-% LOAD ECHOGRAM DATA IF LAYERDATA DOES NOT EXIST IN FILE
-if ~isfield(lyr, 'layerData')
-  lyr = load(layerData_fn,'GPS_time','Latitude','Longitude','Elevation','Surface','Truncate_Bins','Elevation_Correction','Time');
-  lyr = uncompress_echogram(lyr);
-  lyr.layerData{1}.value{1}.data = NaN*zeros(size(lyr.Surface));
-  lyr.layerData{1}.value{2}.data = lyr.Surface;
-  lyr.layerData{1}.quality = ones(size(lyr.Surface));
-end
-
-% DONT SUPPORT NEW LAYERDATA FOR NOW (CRESIS > OPS ONLY)
-% CHECK WHICH LAYERDATA FORMAT THIS IS (CReSIS OR OPS)
-% newLd = false;
-if ~isfield(lyr.layerData{1},'value')
-  error('NEW LAYERDATA FORMAT NOT SUPPORTED YET')
-  % newLd = true;
-end
+% LOAD AND COMBINE LAYERDATA
+% lyr = opsMergeLayerData(layerDataFn,layerDataFn_Pre,layerDataFn_Post);
 
 % GET OPS PATH INFORMATION
 opsCmd;
@@ -154,8 +156,7 @@ for layerIdx = 1:length(lyr.layerData)
   
   % INTERPOLATE COMBINED LAYERDATA ONTO OPS PATH, STORE IN THE OUTPUT
   opsLayerData(end+1).properties.point_path_id = pathData.properties.id(keepPathIdxs);
-  opsLayerData(end).properties.username = settings.userName;
-  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time(keepPathIdxs));
+  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time(keepPathIdxs),'PCHIP');
   opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time(keepPathIdxs)))*2;
   opsLayerData(end).properties.quality = interp1(lyrCombined.gps_time,lyrCombined.quality,pathData.properties.gps_time(keepPathIdxs),'nearest');
   opsLayerData(end).properties.lyr_name = lyrCombined.lyr_name;

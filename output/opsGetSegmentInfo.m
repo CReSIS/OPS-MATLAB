@@ -8,6 +8,8 @@ function [status,data] = opsGetSegmentInfo(sys,param)
 %   sys: (string) sys name ('rds','accum','snow',...)
 %   param: structure with fields
 %     properties.segment_id = integer
+%         or
+%     properties.segment = string
 %
 % Output:
 %   status: integer (0:Error,1:Success,2:Warning)

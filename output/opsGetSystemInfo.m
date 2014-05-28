@@ -14,11 +14,12 @@ function [status,data] = opsGetSystemInfo()
 %       properties.season = cell of string/s
 %       properties.location = cell of string/s
 %       properties.public = array of boolean/s
+%       opsProfile = structure
 %
 % Author: Kyle W. Purdon
 
 % CONSTRUCT THE JSON STRUCTURE
-[param,~,~] = opsAuthenticate(struct('properties',[]));
+[param,~,opsProfile] = opsAuthenticate(struct('properties',[]),true);
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCTURE TO A JSON STRING
@@ -48,5 +49,7 @@ for outIdx = 1:length(decodedJson)
   data.properties.seasons{end+1} = decodedJson{outIdx}.season;
   data.properties.locations{end+1} = decodedJson{outIdx}.location;
 %   data.properties.public(end+1) = decodedJson{outIdx}.public;
+
 end
+data.opsProfile = opsProfile;
 end
