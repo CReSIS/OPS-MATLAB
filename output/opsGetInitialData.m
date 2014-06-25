@@ -47,6 +47,6 @@ end
 [status,decodedJson] = jsonResponseDecode(jsonResponse);
 
 if status==1
-    data = strcat(gOps.sysUrl,decodedJson);
+    data = strcat(sysUrl,decodedJson);
     fprintf('Initial Datapack Created.\n Download from %s \n', data);
 end

@@ -21,7 +21,7 @@ function [status,data] = opsCreateLayer(sys,param)
 % Author: Kyle W. Purdon
 
 % SET UP DEFAULT VALUES FOR GROUP AND DESCRIPTION
-if ~isfield(param.properties,'lyr_group_name')
+if ~isfield(param.properties,'lyr_group_name') || isempty(param.properties.lyr_group_name)
   if any(strcmp(param.properties.lyr_name,{'surface','bottom'}))
     param.properties.lyr_group_name = 'standard';
   else

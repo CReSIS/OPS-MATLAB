@@ -12,20 +12,20 @@
 
 %% USER INPUT
 
-profileCmd = false; % THE OPS PROFILER WILL RUN AND RETURN PROFILING LOGS
+gOps.profileCmd = false; % THE OPS PROFILER WILL RUN AND RETURN PROFILING LOGS
 
-% sysUrl = 'https://ops.cresis.ku.edu/';
-sysUrl = 'http://ops2.cresis.ku.edu/';
-% sysUrl = 'http://192.168.111.222/';
+%gOps.sysUrl = 'https://ops.cresis.ku.edu/';
+%gOps.sysUrl = 'http://ops2.cresis.ku.edu/';
+gOps.sysUrl = 'http://192.168.111.222/';
 
 %% AUTOMATED SECTION (DONT MODFIY)
 
-dbUser = '';
-dbPswd = '';
+gOps.dbUser = '';
+gOps.dbPswd = '';
 
-serverUrl = strcat(sysUrl,'ops/');
-geoServerUrl = strcat(sysUrl,'geoserver/');
+gOps.serverUrl = strcat(gOps.sysUrl,'ops/');
+gOps.geoServerUrl = strcat(gOps.sysUrl,'geoserver/');
 
-if profileCmd
-    web(strcat(serverUrl(1:end-4),'profile-logs/'));
+if gOps.profileCmd
+    web(strcat(gOps.serverUrl(1:end-4),'profile-logs/'));
 end

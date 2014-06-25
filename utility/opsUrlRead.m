@@ -108,10 +108,11 @@ try
     inputStream.close;
     byteArrayOutputStream.close;
     output = char(byteArrayOutputStream.toByteArray');
-catch
-    if catchErrors, return
-    else error('MATLAB:urlread:ConnectionFailed','Error downloading URL. Your network connection may be down or your proxy settings improperly configured.');
-    end
+catch ME
+    error('%s: \n %s','Error using opsUrlRead',ME.message); 
+    %if catchErrors, return
+    %else error('MATLAB:urlread:ConnectionFailed','Error downloading URL. Your network connection may be down or your proxy settings improperly configured.');
+    %end
 end
 
 status = 1;

@@ -40,10 +40,13 @@ function [status,data] = opsGetLayerPoints(sys,param)
 %
 % Author: Kyle W. Purdon
 
+global gRadar;
+
 % CONSTRUCT THE JSON STRUCTURE
 param.properties.mat = true;
-param.properties.username = '';
-param.properties.userauthstatus = false;
+opsAuth = load(fullfile(gRadar.tmp_path,'ops.mat'));
+param.properties.userName = opsAuth.userName;
+param.properties.isAuthenticated = opsAuth.isAuthenticated;
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCTURE TO A JSON STRING

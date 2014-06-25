@@ -2,7 +2,8 @@
 %
 % Prints out the contents of the OPS database for debugging
 
-system = 'rds';
+% system: string containing accum, auth, kuband, opsuser, rds, or snow
+system = 'opsuser';
 
 query = 'SELECT * FROM pg_catalog.pg_tables';
 [status,tables] = opsQuery(query);
@@ -13,9 +14,10 @@ query = 'SELECT * FROM pg_catalog.pg_tables';
 
 if 0
   %% Print all the tables
+  tables_sorted = sort(tables(2,:))
   for idx = 1:size(tables,2)
-    if ~strncmp(tables{2,idx},'pg_',3)
-      fprintf('%s\n', tables{2,idx});
+    if ~strncmp(tables_sorted{idx},'pg_',3)
+      fprintf('%s\n', tables_sorted{idx});
     end
   end
 end
@@ -43,6 +45,8 @@ for idx = 1:size(tables,2)
       for row = 1:size(data,1)
         for col = 1:size(data,2)
           if isnumeric(data{row,col})
+            tableContents{row,col} = sprintf('%g',data{row,col});
+          elseif islogical(data{row,col})
             tableContents{row,col} = sprintf('%g',data{row,col});
           else
             tableContents{row,col} = sprintf('%s',data{row,col});

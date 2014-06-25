@@ -11,6 +11,7 @@ function [status,message] = opsShiftTwtt(sys,param)
 %     properties.season = string
 %     properties.segment = string
 %     properties.lyr_name = string ('surface','bottom', etc...)
+%     properties.offset = double (twtt offset)
 %
 % Output:
 %   status: 0 (error), 1 (success), or 2 (warning)

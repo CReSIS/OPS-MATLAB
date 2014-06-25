@@ -12,7 +12,9 @@ function [status,message] = opsDeleteLayerPoints(sys,param)
 %     properties.stop_point_path_id = integer
 %     properties.max_twtt = double
 %     properties.min_twtt = double
-%     properties.lyr_name = string
+%     properties.lyr_name OR properties.lyr_id
+%       lyr_name: string ('surface','bottom', etc...)
+%       lyr_id = scalar integer (database ID)
 %
 %     OR
 %
@@ -20,7 +22,9 @@ function [status,message] = opsDeleteLayerPoints(sys,param)
 %     properties.stop_gps_time = double
 %     properties.max_twtt = double
 %     properties.min_twtt = double
-%     properties.lyr_name = string
+%     properties.lyr_name OR properties.lyr_id
+%       lyr_name: string ('surface','bottom', etc...)
+%       lyr_id = scalar integer (database ID)
 %     properties.segment = string
 %     properties.location = string ('arctic' or 'antarctic')
 %

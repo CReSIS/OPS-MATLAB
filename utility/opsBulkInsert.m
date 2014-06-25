@@ -210,7 +210,7 @@ if insertPathCmd
       
     catch ME
       
-      diary OFF
+      %diary OFF
       ME.getReport()
       failedSegments{end+1} = param.day_seg; % STORE THE SEGMENT IF ANYTHING FAILED
       
