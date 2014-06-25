@@ -22,9 +22,11 @@ function [status,data] = opsGetCrossovers(sys,param)
 %       properties.cross_elev = double array
 %       properties.layer_id = integer array
 %       properties.frame_id = integer array
+%       properties.segment_id = integer array
 %       properties.twtt = double array
 %       properties.angle = double array
 %       properties.abs_error = double array
+%       properties.cross_quality = integer array
 %
 % Author: Trey Stafford, Kyle W. Purdon
 
@@ -63,6 +65,7 @@ if status == 2
   data.properties.twtt = [];
   data.properties.angle = [];
   data.properties.abs_error = [];
+  data.properties.cross_quality = [];
 else
   data.properties.source_point_path_id = cell2mat(decodedJson.source_point_path_id);
   data.properties.cross_point_path_id = cell2mat(decodedJson.cross_point_path_id);
@@ -75,5 +78,6 @@ else
   data.properties.twtt = cell2mat(decodedJson.twtt);
   data.properties.angle = cell2mat(decodedJson.angle);
   data.properties.abs_error = cell2mat(decodedJson.abs_error);
+  data.properties.cross_quality = cell2mat(decodedJson.cross_quality);
 end
 end
