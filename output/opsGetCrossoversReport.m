@@ -3,15 +3,18 @@ function [status,data] = opsGetCrossoversReport(sys,param)
 % [status,data] = opsGetCrossoversReport(sys,param)
 %
 % Creates a crossovers report (.csv) from crossovers in the database.
+% Currently returns only crossovers with reportable errors. 
 %
 % Input:
 %   sys: (string) sys name ('rds','accum','snow',...)
 %   param: structure with fields
 %     properties.location = string ('arctic' or 'antarctic')
 %     properties.lyr_name = string or cell of strings ('surface','bottom')
+%       'all' will fetch crossovers for all layers
 %     PICK ONE OF THE FOLLOWING:
-%       properties.seasons: string or cell of strings
-%       properties.point_path_id: integer or array of integers
+%       properties.seasons: string or cell of strings (The seasons for
+%           which crossovers will be returned. Specifiying one season 
+%            will return self-intersecting crossovers for that season only.)
 %       properties.frame = string or cell of strings
 %
 % Output:
