@@ -8,14 +8,24 @@ function [status,message] = opsAnalyze(sys,param)
 %   sys: (string) sys name ('rds','accum','snow',...)
 %   param: structure with fields
 %     properties.tables = cell array of strings specifying table names to be analyzed. (without system_ prefix) 
-%
+% or properties.tables = 'all' to analyze all the tables
+%     If this argument is not specified, all the tables will also be analyzed.
 % Output:
 %   status: integer (0:Error,1:Success)
 %   message: status message
 %
-% Author: Trey Stafford
+% Author: Trey Stafford, Weibo Liu
 
 % CONSTRUCT THE JSON STRUCTURE
+
+if nargin == 1
+  param.properties.tables = {'layers','layer_links','layer_groups','crossovers','locations','layer_points','point_paths','frames','landmarks','seasons','season_groups','segments','radars'};
+end
+
+if strcmpi(param.properties.tables, 'all')
+  param.properties.tables = {'layers','layer_links','layer_groups','crossovers','locations','layer_points','point_paths','frames','landmarks','seasons','season_groups','segments','radars'};
+end
+
 jsonStruct = struct('properties',param.properties);
 
 % CONVERT THE JSON STRUCUTRE TO A JSON STRING
