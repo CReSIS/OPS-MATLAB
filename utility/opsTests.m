@@ -1,312 +1,83 @@
 % =========================================================================
 % OPS TEST UTILITY
 %
-% Tests all of the OPS functions on a fresh database using mock data.
+% Tests that MATLAB can communicate with the OPS system.
 %
-% WARNING: THIS SHOULD BE DONE ON AN EMPTY DEVELOPMENT DATABASE ONLY.
+% A user must exist or be created to run all tests.
 %
-% WARNING: A USER WITH CREATE DATA PERMISSIONS MUST EXIST.
-%   THE FIRST CREATE USER LOGIN CAN BE ANYTHING (TESTING USER CREATION)
-%   THE SECOND LOG-IN SHOULD BE A USER WITH ROOT PERMISSIONS.
-%
-% IF ANYTHING FAILS MID-SCRIPT YOU WILL NEED TO FLUSH THE DATABASE.
-%   MAKE SURE YOU RE-CREATE A ROOT PERMISSIONS ENABLED USER
-%
-% Author: Kyle W. Purdon
+% Author: Kyle W. Purdon, Trey Stafford
 %
 % =========================================================================
-
-%% USER OVERWRITE
-deleteAfterCompleteion = true;
-
-%% warning CHECK BEFORE STARTING
 opsCmd;
-if any(strcmp(gOps.serverUrl,{'https://ops.cresis.ku.edu/ops/','http://ops2.cresis.ku.edu/ops/'}))
-  warning('warning: DO NOT USE THIS TOOL ON THE PRODUCTION DATABASE');
-end
 
-%% CREATE A NEW USER
-clear param;
-[status,newUser] = opsCreateUser();
-if status ~= 1
-  warning(newUser);
-end
-
-%% AUTHENTICATE THE NEW USER
-param = struct('properties',[]);
-[~,opsAuth,opsProfile] = opsAuthenticate(param);
-
-%% CREATE NEW LAYER GROUP
-clear param;
-param.properties.lyr_name = 'test';
-param.properties.lyr_group_name = 'testgroup';
-param.properties.lyr_description = 'this is a test layer';
-[status,newLayer] = opsCreateLayer('rds',param);
-if status ~= 1
-  warning(newLayer);
-end
-
-%% CREATE NEW LAYER (NOT IN USER DEFAULT ALLOCATED GROUP)
-clear param;
-param.properties.lyr_name = 'test1';
-param.properties.lyr_group_name = 'testgroup';
-param.properties.lyr_description = 'this is a test layer 1';
-[status,newLayer2] = opsCreateLayer('rds',param);
-if status ~= 1
-  warning(newLayer2);
-end
-
-%% DELETE LAYER
-clear param;
-param.properties.lyr_name = 'test1';
-[status,deletedLayer] = opsDeleteLayer('rds',param);
-if status ~= 1
-  warning(deletedLayer);
-end
-if ~(deletedLayer.properties.lyr_id == newLayer2.properties.lyr_id)
-  warning('layer deletion failed to delete the correct layer');
-end
-
-%% GET LAYERS
-[status,allLayers] = opsGetLayers('rds');
-if status ~= 1
-  warning(allLayers);
-end
-if any(newLayer2.properties.lyr_id == allLayers.properties.lyr_id)
-  warning('layer was not deleted');
-end
-
-%% RECREATE DELETED LAYER
-clear param;
-param.properties.lyr_name = 'test1';
-param.properties.lyr_group_name = 'testgroup';
-param.properties.lyr_description = 'this is a test layer 1';
-[status,newLayer2] = opsCreateLayer('rds',param);
-if status ~= 1
-  warning(newLayer2);
-end
-
-%% GET LAYERS (TO CONFIRM LAYER WAS RECREATED)
-[status,allLayers] = opsGetLayers('rds');
-if status ~= 1
-  warning(allLayers);
-end
-if ~any(newLayer2.properties.lyr_id == allLayers.properties.lyr_id)
-  warning('layer was not recreated');
-end
-
-%% QUERY (INSERT A TEST SEASON [CRESIS_PRIVATE])
-[status,qData] = opsQuery('INSERT INTO rds_seasons (location_id,name,season_group_id) VALUES (1,''test1'',2) returning id;');
-if status ~= 1
-  warning(qData);
-end
-seasonId = double(qData{1});
-
-%% QUERY (INSERT A TEST SEASON [CRESIS_PUBLIC])
-[status,qData] = opsQuery('INSERT INTO rds_seasons (location_id,name,season_group_id) VALUES (1,''test'',1) returning id;');
-if status ~= 1
-  warning(qData);
-end
-seasonId = double(qData{1});
-
-%% GET SYSTEM INFO (MAKE SURE ONLY SEASON TEST1 SHOWS UP)
-[status,getSysData] = opsGetSystemInfo();
+warn = false;
+%Make sure MATLAB can query the database:
+[status,data] = opsQuery('select 9;');
 if status == 1
-  if ~all(size(getSysData.properties.seasons) == [1 1])
-    warning('ALL SEASONS RUTURNED. OK IF ROOT USER');
-  end
+    if data{1} == 9
+        fprintf('Database successfully queried.\n')
+    else
+        warning('%s s% \n','Something went wrong with querying the database. Expected 9 but got ', data{1})
+        warn = true;
+    end
 else
-  warning(getSysData);
+    warning('%s %s \n','Something went wrong with querying the database! Got status ',status)
+    warn = true;
 end
+clear status data
 
-%% CREATE PATH (FAKE DATA)
-clear param;
-param.geometry.coordinates = [[76.422813519870743;76.422813519870743;76.422813519870743] [-68.994377212760924; -68.994377212760924; -68.994377212760924]];
-param.properties.location = 'arctic';
-param.properties.season = 'test';
-param.properties.radar = 'test';
-param.properties.segment = '99999999_01';
-param.properties.gps_time = [1301569765.964949,1301569766.964949,1301569767.964949,1301569768.964949];
-param.properties.elev = [1257.839261098396,1258.839261098396,1259.839261098396,1260.839261098396];
-param.properties.roll = [-0.249471361002334,-0.249471361002334,-0.249471361002334,-0.249471361002334];
-param.properties.pitch = [0.088953745496139,0.088953745496139,0.088953745496139,0.088953745496139];
-param.properties.heading = [2.147027618159285,2.147027618159285,2.147027618159285,2.147027618159285];
-param.properties.frame_count = 2;
-param.properties.frame_start_gps_time = [1301569765.964949,1301569767.964949];
-[status,pathStatus] = opsCreatePath('rds',param);
-if status ~= 1
-  warning(pathStatus);
+% Stop process to see if a user should be created.
+if ~any(strcmp(gOps.serverUrl,{'https://ops.cresis.ku.edu/ops/','http://ops2.cresis.ku.edu/ops/'}))
+    confirmParams = {'Do you wish to create a new user?','','Note: for these tests to continue a user must be defined.'};
+    confirmButton = questdlg(confirmParams,'Create User?','YES: Create User','NO: Use Existing User','NO: Quit Tests','YES: Create User');
+    switch confirmButton
+        case 'NO: Quit Tests'
+            error('TESTS ENDED BY USER.');
+        case 'YES: Create User'
+            opsCreateUser();            
+    end
 end
-
-%% GET PATH
-clear param;
-param.properties.location = 'arctic';
-param.properties.season = 'test';
-param.properties.start_gps_time = 1301569765.964949;
-param.properties.stop_gps_time = 1301569768.964949;
-param.properties.nativeGeom = true;
-[status,pathData] = opsGetPath('rds',param);
-if status ~= 1
-  warning(pathData);
-end
-
-%% CREATE LAYER POINTS
-clear param;
-param.properties.point_path_id = pathData.properties.id;
-param.properties.username = 'admin';
-param.properties.twtt = [0.00000241705663401991,0.00000251705663401991,0.00000231705663401991];
-param.properties.type = [1 2 1];
-param.properties.quality = [1 2 3];
-param.properties.lyr_name = 'test';
-[status,lpData] = opsCreateLayerPoints('rds',param);
-if status ~= 1
-  warning(lpData);
-end
-
-%% CREATE LAYER POINTS (AGAIN, TEST DUPLICATES AND NAN DELETION)
-clear param;
-param.properties.point_path_id = pathData.properties.id;
-param.properties.username = 'kpurdon';
-param.properties.twtt = [0.00000241705663401991,0.00000251705663401991,NaN];
-param.properties.type = [1 2 1];
-param.properties.quality = [1 2 3];
-param.properties.lyr_name = 'test';
-[status,lpData] = opsCreateLayerPoints('rds',param);
-if status ~= 1
-  warning(lpData);
-end
-
-%% GET LAYER POINTS
-clear param;
-param.properties.point_path_id = pathData.properties.id;
-[status,lpGetData] = opsGetLayerPoints('rds',param);
-if status ~= 1
-  warning(lpGetData);
+       
+%Make sure MATLAB can handle a django view response
+[status,~] = opsGetSystemInfo();
+if status == 1
+    fprintf('opsGetSystemInfo() successful! Django is responsive. \n')
 else
-  if length(lpGetData.properties.gps_time) > 2
-    warning('Duplicates were created or NaN did not delete.');
-    keyboard;
-  end
+    warning('%s \n','Something went wrong with opsGetSystemInfo()!')
+    warn = true;
 end
+clear status 
 
-
-%% DELETE LAYER POINTS
-clear param;
-param.properties.start_point_path_id = pathData.properties.id(2);
-param.properties.stop_point_path_id = pathData.properties.id(2);
-param.properties.max_twtt = 0.00000261705663401991;
-param.properties.min_twtt = 0.00000242705663401991;
-param.properties.lyr_name = 'test';
-[status,lpDelData] = opsDeleteLayerPoints('rds',param);
-if status ~= 1
-  warning(lpDelData);
+%Make sure the database has a surface layer defined for rds (should be
+%added automatically by django fixture)
+[status,data] =  opsGetLayers('rds');
+if status == 1
+    if any(ismember(data.properties.lyr_id,1)) && any(ismember(data.properties.lyr_id,2))
+        fprintf('opsGetLayers() successfully shows that there is a surface and bottom layer. \n');
+    else
+        warning('opsGetLayers() seemed to have worked, but there is no surface and bottom layer! Something may have gone wrong with syncdb.')
+        warn = true;
+    end
+else
+    warning('Something went wrong with opsGetLayers()!')
+    warn = true;
 end
+clear status data
 
-%% GET LAYER POINTS
-clear param;
-param.properties.point_path_id = pathData.properties.id;
-[status,lpGetData] = opsGetLayerPoints('rds',param);
-if status ~= 1
-  warning(lpGetData);
-end
-
-%% GET LAYER POINTS WTIH GEOM
-clear param;
-param.properties.location = 'arctic';
-param.properties.point_path_id = pathData.properties.id;
-param.properties.return_geom = 'geog';
-[status,lpGetData] = opsGetLayerPoints('rds',param);
-if status ~= 1
-  warning(lpGetData);
-end
-
-%% GET LAYER POINTS WTIH GEOM (PROJECTED)
-param.properties.return_geom = 'proj';
-[status,lpGetData] = opsGetLayerPoints('rds',param);
-if status ~= 1
-  warning(lpGetData);
-end
-
-%% GET FRAME CLOSEST
-clear param;
-param.properties.location = 'arctic';
-param.properties.season = 'test';
-param.properties.x = 2924.333796700000;
-param.properties.y = 89999.049551300004;
-[status,cFrmData] = opsGetFrameClosest('rds',param);
-if status ~= 1
-  warning(cFrmData);
-end
-
-%% GET FRAME SEARCH
-clear param;
-param.properties.search_str = '999999'; %'99999999_01_001'
-param.properties.location = 'arctic';
-[status,sFrmData] = opsGetFrameSearch('rds',param);
-if status ~= 1
-  warning(sFrmData);
-end
-
-%% GET SYSTEM INFO
-[status,sysData] = opsGetSystemInfo();
-if status ~= 1
-  warning(sysData);
-end
-
-%% GET SEGMENT INFO
-clear param;
-param.properties.segment_id = sFrmData.properties.segment_id;
-[status,segData] = opsGetSegmentInfo('rds',param);
-if status ~= 1
-  warning(segData);
-end
-
-%% ANALYZE TABLES
-clear param;
-param.properties.tables = {'layer_points','point_paths','segments','frames'};
-[status,anData] = opsAnalyze('rds',param);
-if status ~= 1
-  warning(anData);
-end
-
-%% GET INITIAL DATAPACK
-clear param;
-param.properties.seasons = {'test'};
-param.properties.segments = {'99999999_01'};
-param.properties.radars = {'test'};
-[status,initData] = opsGetInitialData('rds',param);
-if status ~= 1
-  warning(initData);
-end
-
-if deleteAfterCompleteion
-  %% BULK DELETE ALL OF IT
-  clear param;
-  param.properties.season = 'test';
-  [status,delData] = opsDeleteBulk('rds',param);
-  if status ~= 1
-    warning(delData);
-  end
-
-  param.properties.season = 'test1';
-  [status,delData] = opsDeleteBulk('rds',param);
-  if status ~= 1
-    warning(delData);
-  end
-  
-  fprintf('NO ERRORS OCCURED. TESTS PASSED\n');
-  
-  %% CLEANUP (DELETE LAYERS AND LAYER GROUPS)
-  [status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test'' RETURNING name;');
-  [status,cData] = opsQuery('DELETE FROM rds_layers WHERE name=''test1'' RETURNING name;');
-  [status,cData] = opsQuery('DELETE FROM rds_layer_groups WHERE name=''testgroup'' RETURNING name;');
-end
-
-%% LOGOUT THE NEW USER
-clear param;
+%Logout the user.
 [status,logoutNotice] = opsLogoutUser();
 if status ~= 1
   warning(logoutNotice);
+  warn = true;
 else
   fprintf('%s\n',logoutNotice)
 end
+clear status logoutNotice
+
+%Let the user know the tests have completed. 
+if ~warn
+    fprintf('opsTests have completed. No Errors were encountered. \n');
+else
+    warning('opsTests have completed but errors were encountered!');
+end
+clear warn
