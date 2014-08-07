@@ -1,5 +1,5 @@
-function opsAtmData = atmToOps(atmFn,atmParam,settings)
-% opsAtmData = atmToOps(atmFn,atmParam,recordsFn)
+function opsAtmData = atmToOps(atmFn,settings)
+% opsAtmData = atmToOps(atmFn,recordsFn)
 %
 % 1. Converts L2 ATM to the OPS layer format.
 % 2. Interpolates L2 ATM onto a fixed scale based on point paths in the OPS database.
@@ -33,7 +33,7 @@ function opsAtmData = atmToOps(atmFn,atmParam,settings)
 % see also read_lidar_atm.m
 
 % LOAD THE ATM FILE
-lidar = read_lidar_atm(atmFn,atmParam);
+lidar = read_lidar_atm(atmFn);
 
 % FIND DUPLICATES IN ATM DATA
 [~,notDupIdxs] = unique(lidar.gps_time);

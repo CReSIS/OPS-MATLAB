@@ -156,7 +156,7 @@ for layerIdx = 1:length(lyr.layerData)
   
   % INTERPOLATE COMBINED LAYERDATA ONTO OPS PATH, STORE IN THE OUTPUT
   opsLayerData(end+1).properties.point_path_id = pathData.properties.id(keepPathIdxs);
-  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time(keepPathIdxs),'PCHIP');
+  opsLayerData(end).properties.twtt = interp1(lyrCombined.gps_time,lyrCombined.twtt,pathData.properties.gps_time(keepPathIdxs),'pchip');
   opsLayerData(end).properties.type = ones(size(pathData.properties.gps_time(keepPathIdxs)))*2;
   opsLayerData(end).properties.quality = interp1(lyrCombined.gps_time,lyrCombined.quality,pathData.properties.gps_time(keepPathIdxs),'nearest');
   opsLayerData(end).properties.lyr_name = lyrCombined.lyr_name;

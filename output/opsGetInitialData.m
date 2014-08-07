@@ -4,8 +4,8 @@ function [status,data] = opsGetInitialData(sys,param)
 %
 % Creates an initial datapack for field depolyments of the OPS system
 % containing all database information associated with a given set of
-% segments Datapacks should be placed in the
-% ../vagrant/data/postgresql/ directory prior to 'vagrant up.'
+% segments. Datapacks should be placed in the
+% ../vagrant/data/postgresql/ directory prior to running provisions.sh
 %
 % Input:
 %   sys: (string) sys name ('rds','accum','snow',...)

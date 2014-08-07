@@ -78,6 +78,6 @@ else
   data.properties.twtt = cell2mat(decodedJson.twtt);
   data.properties.angle = cell2mat(decodedJson.angle);
   data.properties.abs_error = cell2mat(decodedJson.abs_error);
-  data.properties.cross_quality = cell2mat(decodedJson.cross_quality);
+  data.properties.cross_quality = cellfun(@double,decodedJson.cross_quality);
 end
 end

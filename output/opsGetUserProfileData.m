@@ -31,6 +31,7 @@ function [status,message] = opsGetUserProfileData()
 %       properties.seasonRelease = (boolean) can the user release seasons?
 %       properties.createData = (boolean) can the user create new data?
 %       properties.bulkDeleteData = (boolean) can the user bulk delete data?
+%       properties.isRoot = (boolean) is the user a root user?
 %
 % Author: Kyle W. Purdon
 

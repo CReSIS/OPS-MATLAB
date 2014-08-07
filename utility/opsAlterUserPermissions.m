@@ -54,10 +54,6 @@ end
 
 if status == 1
     fprintf('%s \n',data)
-elseif status == 2
-    warning(data)
-else
-    error(data)
 end
 
 end
